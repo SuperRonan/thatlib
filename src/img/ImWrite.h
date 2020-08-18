@@ -8,44 +8,28 @@ namespace img
 	{
 		struct WriteInfo
 		{
-			bool is_default;
+			bool is_default=true;
 
-			int magic_number;
+			int magic_number=0;
 
-			static constexpr WriteInfo defaultInfo()
-			{
-				WriteInfo res;
-				res.is_default = true;
-				return res;
-			}
+			static constexpr WriteInfo defaultInfo();
 		};
 
-		bool writeFile(byte* data, size_t size, const wchar_t * path)
-		{
-			FILE* file;
-			errno_t error = _wfopen_s(&file, path, L"wb");
-			if (file && error==0)
-			{
-				fwrite(data, sizeof byte, size, file);
-				fclose(file);
-				return true;
-			}
-			throw std::runtime_error(std::string("Could not open the file ") + convertWString(path));
-			return false;
-		}
+		bool writeFile(byte* data, size_t size, const wchar_t* path);
+
 		namespace netpbm
 		{
 
-			size_t headerSize(int magic_number, std::string const& width, std::string const& height, const std::string& max_value = "")
+			__forceinline size_t headerSize(int magic_number, std::string const& width, std::string const& height, const std::string& max_value = "")
 			{
 				return
 					3 + // magic number
 					width.size() + 1 + 
 					height.size() + 1 + 
-					((magic_number == 1 | magic_number == 4) ? 0 : (max_value.size() + 1));
+					(((magic_number == 1) | (magic_number == 4)) ? 0 : (max_value.size() + 1));
 			}
 
-			size_t contentSize(int magic_number, size_t number_of_pixels)
+			__forceinline size_t contentSize(int magic_number, size_t number_of_pixels)
 			{
 				size_t size_per_pixel;
 				if (magic_number == 6)
@@ -60,7 +44,7 @@ namespace img
 				return size_per_pixel * number_of_pixels;
 			}
 
-			void writeHeader(byte*& ptr, int magic_number, std::string const& width, std::string const& height, const std::string & max_value="")
+			__forceinline void writeHeader(byte*& ptr, int magic_number, std::string const& width, std::string const& height, const std::string & max_value="")
 			{
 				ptr[0] = 'P';
 				ptr[1] = '0' + (char)magic_number;
@@ -81,7 +65,7 @@ namespace img
 				
 				write(height, ptr);
 
-				if (magic_number != 1 & magic_number != 4)
+				if ((magic_number != 1) & (magic_number != 4))
 				{
 					write(max_value, ptr);
 				}

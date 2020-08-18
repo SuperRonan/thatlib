@@ -7,31 +7,7 @@ namespace img
 {
 	namespace io
 	{
-		std::vector<byte> load_file(const wchar_t* name)
-			{
-				std::vector<byte> buf;
-				// open
-				FILE* f;
-				_wfopen_s(&f, name, L"rb");
-				if (!f)
-				{
-					throw std::runtime_error(std::string("Could not open file: ") + (const char*)name);
-				}
-
-				// get size
-				fseek(f, 0, SEEK_END);
-				int s = ftell(f);
-				fseek(f, 0, SEEK_SET);
-
-				// read (put space at end for atoi)
-				buf.resize(s + 1);
-				fread((char*)&buf[0], 1, s, f);
-				buf[s] = ' ';
-
-				// close
-				fclose(f);
-				return buf;
-			}
+		std::vector<byte> load_file(const wchar_t* name);
 		
 		namespace netpbm
 		{
@@ -51,7 +27,7 @@ namespace img
 				}
 			};
 
-			void eat_white(pbyte& ptr, const pbyte end)
+			__forceinline void eat_white(pbyte& ptr, const pbyte end)
 			{
 				for (; ptr != end; ++ptr)
 				{
@@ -60,7 +36,7 @@ namespace img
 				}
 			}
 
-			void eat_line(pbyte& ptr, const pbyte end)
+			__forceinline void eat_line(pbyte& ptr, const pbyte end)
 			{
 				for (; ptr != end; ++ptr)
 				{
@@ -70,7 +46,7 @@ namespace img
 				ptr++;
 			}
 
-			void eat_token(pbyte& ptr, const pbyte end)
+			__forceinline void eat_token(pbyte& ptr, const pbyte end)
 			{
 				for (; ptr != end; ++ptr)
 				{
@@ -79,7 +55,7 @@ namespace img
 				}
 			}
 
-			int get_int(pbyte& ptr, const pbyte end)
+			__forceinline int get_int(pbyte& ptr, const pbyte end)
 			{
 				eat_white(ptr, end);
 				int v = atoi((char*)ptr);
@@ -87,7 +63,7 @@ namespace img
 				return v;
 			}
 
-			void eat_comment(pbyte& ptr, const pbyte end)
+			__forceinline void eat_comment(pbyte& ptr, const pbyte end)
 			{
 				while (ptr != end)
 				{

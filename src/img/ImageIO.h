@@ -23,7 +23,7 @@ namespace img
 		
 		namespace netpbm
 		{
-			bool isNetpbm(std::wstring const& ext)
+			__forceinline bool isNetpbm(std::wstring const& ext)
 			{
 				return ext == L".ppm" || ext == L".pgm" || ext == L".pbm";
 			}
@@ -53,7 +53,7 @@ namespace img
 			return T(1);
 		}
 
-		std::string convertWString(std::wstring const& wstr)
+		__forceinline std::string convertWString(std::wstring const& wstr)
 		{
 			return std::string(wstr.begin(), wstr.end());
 		}
