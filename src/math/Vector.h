@@ -282,7 +282,7 @@ constexpr inline math::Vector<N, T> operator/(Q const& q, math::Vector<N, T> con
 namespace std
 {
 	template <int N, class T>
-	struct is_trivially_copyable < math::Vector < N, T >> : true_type {};
+	struct is_trivially_copyable < math::Vector < N, T >> : public is_trivially_copyable<T>::type {};
 }
 
 template <class Stream, int N, class T>

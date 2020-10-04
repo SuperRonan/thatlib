@@ -30,7 +30,16 @@ namespace img
 
 		}
 
+		namespace stbi
+		{
+			__forceinline bool canReadWrite(std::wstring const& ext)
+			{
+				return ext == L".png" || ext == L".jpg";
+			}
+		}
+
 		using RGBu = RGB<unsigned char>;
+		using RGBAu = RGBA<unsigned char>;
 
 		template <class T>
 		constexpr T TypeMax()noexcept

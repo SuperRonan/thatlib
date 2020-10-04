@@ -194,7 +194,7 @@ namespace img
 			}
 		}
 
-		namespace png
+		namespace stbi
 		{
 			template <class T, bool RM = IMAGE_ROW_MAJOR>
 			Image<T, RM> read(const wchar_t* path)
@@ -231,6 +231,12 @@ namespace img
 					tmp.setData(data);
 					res = tmp;
 				}
+				else if (number_of_channels == 4)
+				{
+					Image<RGBAu, RM> tmp(width, height);
+					tmp.setData(data);
+					res = tmp;
+				}
 				else
 				{
 					delete[] data;
@@ -251,9 +257,9 @@ namespace img
 				{
 					return netpbm::read<T, RM>(path.c_str(), TypeMax<T>());
 				}
-				else if (ext == ".png")
+				else if (stbi::canReadWrite(ext))
 				{
-					return png::read<T, RM>(path.c_str());
+					return stbi::read<T, RM>(path.c_str());
 				}
 				else
 				{
