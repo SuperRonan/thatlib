@@ -38,7 +38,7 @@ namespace img
 			a(a)
 		{}
 
-		constexpr RGBA(RGB<T> const& rgb = 0, T const& a = One<T>()) : 
+		constexpr RGBA(RGB<T> const& rgb, T const& a = One<T>()) : 
 			rgb(rgb),
 			a(a)
 		{}
