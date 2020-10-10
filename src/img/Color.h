@@ -56,6 +56,11 @@ namespace img
 			a = One<T>();
 			return *this;
 		}
+
+		constexpr operator RGB<T>()const
+		{
+			return rgb;
+		}
 	};
 
 	template <class T>
