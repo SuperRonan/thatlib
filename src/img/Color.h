@@ -29,6 +29,8 @@ namespace img
 		RGB<T> rgb;
 		T a;
 
+		using _Type = T;
+
 		constexpr RGBA(RGBA const& other) = default;
 
 		constexpr RGBA(T const& r = 0, T const& g = 0, T const& b = 0, T const& a = One<T>()) :
@@ -55,6 +57,18 @@ namespace img
 			return *this;
 		}
 	};
+
+	template <class T>
+	class is_RGB : public std::false_type {};
+
+	template <class T>
+	class is_RGB<RGB<T>> : public std::true_type {};
+
+	template <class T>
+	class is_RGBA : public std::false_type {};
+
+	template <class T>
+	class is_RGBA<RGBA<T>> : public std::true_type {};
 }
 
 namespace std
