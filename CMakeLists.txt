@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
 PROJECT("thatlib" VERSION 1.0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 ###############################################################
 #FIND_PACKAGE(ZLIB)
@@ -35,6 +35,6 @@ src/math/*
 src/img/*
 )
 
-SET(SOURCES src/img/stb_image.cpp src/img/ImRead.cpp src/img/ImWrite.cpp)
+SET(SOURCES src/img/Image.cpp src/img/stb_image.cpp src/img/ImRead.cpp src/img/ImWrite.cpp)
 
 ADD_LIBRARY(thatlib STATIC ${SOURCES} ${THAT_SOURCE})

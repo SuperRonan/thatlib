@@ -106,14 +106,9 @@ namespace img
 				assert( (ptr - _ptr) == header_size);
 				if (info.magic_number == 6)
 				{
-					Image<RGBu, IMAGE_ROW_MAJOR> tmp(img.width(), img.height());
-					tmp.loop2D([&img, &tmp](int i, int j)
-						{
-							tmp(i, j) = img(i, j);
-						});
+					Image<RGBu, IMAGE_ROW_MAJOR> tmp = img;
 					std::memcpy(ptr, tmp.begin(), content_size);
 				}
-
 
 				bool res;
 				try

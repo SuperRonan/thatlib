@@ -209,7 +209,7 @@ namespace img
 				std::string spath = convertWString(path);
 				try
 				{
-					data = stbi_load(spath.c_str(), &width, &height, &number_of_channels, 0);
+					data = (byte*)stbi_load(spath.c_str(), &width, &height, &number_of_channels, 0);
 				}
 				catch(std::exception const& e)
 				{
@@ -228,16 +228,16 @@ namespace img
 				if (number_of_channels == 3)
 				{
 					Image<RGBu, RM> tmp(width, height);
-					tmp.setData(data);
+					std::memcpy(tmp.rawBegin(), data, tmp.byteSize());
 					res = tmp;
 				}
 				else if (number_of_channels == 4)
 				{
 					Image<RGBAu, RM> tmp(width, height);
-					tmp.setData(data);
+					std::memcpy(tmp.rawBegin(), data, tmp.byteSize());
 					res = tmp;
 				}
-				else
+				if(data)
 				{
 					delete[] data;
 					assert(false);

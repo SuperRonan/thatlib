@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <typeinfo>
 #include <cassert>
+#include <vector>
+#include <stdint.h>
 
 #include "../math/Vector.h"
 
@@ -13,7 +15,6 @@
 namespace img
 {
 	// https://en.wikipedia.org/wiki/Row-_and_column-major_order
-
 	// ---------------------
 	// ---------------------
 	// ---------------------
@@ -26,7 +27,7 @@ namespace img
 	// i -- (column index)
 	// j |  (line index)
 	template <bool ROW_MAJOR, class uint>
-	uint index(uint i, uint j, uint width, uint height) noexcept
+	constexpr uint index(uint i, uint j, uint width, uint height) noexcept
 	{
 		if constexpr (ROW_MAJOR)	return i + j * width;
 		else						return j + i * height;
@@ -41,37 +42,69 @@ namespace img
 		};
 	}
 
-	// It is easier to move on major
-	template <class T, bool M_ROW_MAJOR = IMAGE_ROW_MAJOR>
-	class Image
+	class FormatlessImage
 	{
 	protected:
 
-		using sint = signed long long;
-		using uint = unsigned long long;
+		using byte = int8_t;
 
-		// If the image is empty, m_size == 0
-		uint m_width, m_height, m_size;
+		// In elements
+		size_t _w, _h, _size;
+		std::vector<int8_t> _buffer;
 
-		// If the image is empty, m_data == nulltpr
-		T* m_data;
+
+	public:
+
+		constexpr FormatlessImage(size_t w = 0, size_t h = 0, size_t elem_size=1);
+		constexpr FormatlessImage(FormatlessImage const&) = default;
+		constexpr FormatlessImage(FormatlessImage&&) = default;
+
+		constexpr FormatlessImage& operator=(FormatlessImage const&) = default;
+		constexpr FormatlessImage& operator=(FormatlessImage &&) = default;
+
+
+		constexpr size_t width()const;
+		constexpr size_t height()const;
+		constexpr size_t size() const;
+		constexpr size_t byteSize()const;
+
+		constexpr const byte* rawData()const;
+		constexpr byte* rawData();
+
+		constexpr decltype(auto) rawBegin();
+		constexpr decltype(auto) rawBegin()const;
+		constexpr decltype(auto) rawCBegin()const;
+
+		constexpr decltype(auto) rawEnd();
+		constexpr decltype(auto) rawEnd()const;
+		constexpr decltype(auto) rawCEnd()const;
+
+		constexpr bool empty()const;
+
+		constexpr void resize(size_t w = 0, size_t h = 0, size_t elem_size = 1);
+
+	};
+
+	// It is easier to move on major
+	template <class T, bool M_ROW_MAJOR = IMAGE_ROW_MAJOR>
+	class Image : public FormatlessImage
+	{
+	protected:
 
 		template <class Q, bool _ROW_MAJOR>
 		friend class Image;
 
 		template<class Q, bool _ROW_MAJOR>
-		void copyData(Image<Q, _ROW_MAJOR>const& other)
+		constexpr void copyData(Image<Q, _ROW_MAJOR>const& other)
 		{
 			if constexpr (M_ROW_MAJOR == _ROW_MAJOR) // likely
 			{
-				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
-					std::memcpy(m_data, other.m_data, bufferByteSize());
-				else
-					std::copy(other.cbegin(), other.cend(), begin());
+				_buffer = other._buffer;
 			}
 			else
 			{
-				loop2D([this, &other](uint i, uint j)
+				// TODO more cache efficient (by tile)
+				loop2D([this, &other](size_t i, size_t j)
 					{
 						me(i, j) = other(i, j);
 					});
@@ -87,221 +120,97 @@ namespace img
 
 		using _Type = T;
 
-		constexpr Image(uint width = 0, uint height = 0) :
-			m_width(width),
-			m_height(height),
-			m_size(width* height),
-			m_data(m_size ? new T[m_size] : nullptr)
+		constexpr Image(size_t width = 0, size_t height = 0) :
+			FormatlessImage(width, height)
 		{}
 
-		constexpr Image(uint width, uint height, T const& default_value) :
-			m_width(width),
-			m_height(height),
-			m_size(width* height),
-			m_data(m_size ? new T[m_size] : nullptr)
+		constexpr Image(size_t width, size_t height, T const& default_value) :
+			FormatlessImage(width, height)
 		{
-			if (m_data)
-			{
-				std::fill(begin(), end(), default_value);
-			}
-		}
-
-		~Image()
-		{
-			if (!empty())
-			{
-				delete[] m_data;
-				std::memset(this, 0, sizeof Image);
-			}
+			std::fill(begin(), end(), default_value);
 		}
 
 		template<class Q, bool _ROW_MAJOR>
 		constexpr Image(Image<Q, _ROW_MAJOR> const& other) :
-			m_width(other.width()),
-			m_height(other.width()),
-			m_size(other.size())
+			 FormatlessImage(other.width(), other.height(), other.elemSize())
 		{
-			if (m_size)
-			{
-				m_data = new T[m_size];
-				copyData(other);
-			}
-			else
-			{
-				m_data = nullptr;
-			}
-		}
-
-		constexpr Image(Image const& other) :
-			m_width(other.width()),
-			m_height(other.width()),
-			m_size(other.size())
-		{
-			if (m_size)
-			{
-				m_data = new T[m_size];
-				copyData(other);
-			}
-			else
-			{
-				m_data = nullptr;
-			}
+			copyData(other);
 		}
 
 		// TODO template
 		constexpr Image(Image && other) noexcept:
-			m_width(other.width()),
-			m_height(other.height()),
-			m_size(other.size()),
-			m_data(other.m_data) // steal the data
-		{
-			if (m_size)
-			{
-				other.m_data = nullptr;
-				other.m_size = 0;
-			}
-			else
-			{
-				assert(empty());
-			}
-		}
+			FormatlessImage(std::move(other))
+		{}
 
 		template<class Q, bool _ROW_MAJOR>
 		constexpr Image& operator=(Image<Q, _ROW_MAJOR> const& other)
 		{
-			if (empty())
-			{
-				m_width = other.width();
-				m_height = other.width();
-				m_size = other.size();
-				m_data = new T[size()];
-			}
-			else
-			{
-				if (size() == other.size()) // likely
-				{
-					// no need to reallocate memory
-					m_width = other.width();
-					m_height = other.height();
-				}
-				else // reallocate memory
-				{
-					// for the future, maybe keep the buffer is the new size is smaller
-					delete[] m_data;
-					m_width = other.width();
-					m_height = other.width();
-					m_size = other.size();
-					m_data = new T[size()];
-				}
-			}
+			resize(other.width(), other.height(), other.elemSize());
 			copyData(other);
 			return me;
 		}
 
 		constexpr Image& operator=(Image const& other) noexcept
 		{
-			if (empty())
-			{
-				m_width = other.width();
-				m_height = other.width();
-				m_size = other.size();
-				m_data = new T[size()];
-			}
-			else
-			{
-				if (size() == other.size()) // likely
-				{
-					// no need to reallocate memory
-					m_width = other.width();
-					m_height = other.height();
-				}
-				else // reallocate memory
-				{
-					// for the future, maybe keep the buffer is the new size is smaller
-					delete[] m_data;
-					m_width = other.width();
-					m_height = other.width();
-					m_size = other.size();
-					m_data = new T[size()];
-				}
-			}
-			copyData(other);
+			FormatlessImage::operator=(std::move(other));
 			return me;
 		}
 
-		// TODO template
-		constexpr Image& operator=(Image&& other) noexcept
+		constexpr size_t elemSize()const
 		{
-			if (!empty())
-			{
-				delete[] m_data;
-			}
-			std::memcpy(this, &other, sizeof Image);
-			std::memset(&other, 0, sizeof Image);
-			return me;
-		}
-
-
-		constexpr uint bufferByteSize()const
-		{
-			return m_size * sizeof(T);
-		}
-
-		constexpr bool empty()const
-		{
-			return m_data == nullptr;
+			return sizeof(T);
 		}
 
 		constexpr T* begin()
 		{
-			return m_data;
+			return (T*)rawData();
 		}
 
 		constexpr T* end()
 		{
-			return m_data + size();
+			return (T*) rawEnd() + size();
 		}
 
 		constexpr const T* begin()const
 		{
-			return m_data;
+			return (const T*)rawBegin();
 		}
 
 		constexpr const T* end()const
 		{
-			return m_data + size();
+			return (const T*)rawEnd() + size();
 		}
 
 		constexpr const T* cbegin()const
 		{
-			return m_data;
+			return (T*)rawCBegin();
 		}
 
 		constexpr const T* cend()const
 		{
-			return m_data + size();
+			return (T*)rawCEnd() + size();
 		}
 
 		// i -- (column index)
 		// j |  (line index)
-		constexpr uint index(uint i, uint j)const noexcept
+		constexpr size_t index(size_t i, size_t j)const noexcept
 		{
 			return relativeIndex(i, j);
 		}
 
 		// i -- (column index)
 		// j |  (line index)
-		constexpr uint relativeIndex(uint i, uint j)const noexcept
+		constexpr size_t relativeIndex(size_t i, size_t j)const noexcept
 		{
-			return img::index<M_ROW_MAJOR, uint>(i, j, m_width, m_height);
+			return img::index<M_ROW_MAJOR, size_t>(i, j, width(), height());
 		}
 
-		constexpr uint fixedIndex(uint major_index, uint minor_index)const noexcept
+		constexpr size_t fixedIndex(size_t major_index, size_t minor_index)const noexcept
 		{
 			return major_index + majorSize() * minor_index;
 		}
 
-		constexpr T const& fixedAccess(uint major_index, uint minor_index) const
+		constexpr T const& fixedAccess(size_t major_index, size_t minor_index) const
 		{
 			assert(major_index >= 0);
 			assert(minor_index >= 0);
@@ -310,37 +219,22 @@ namespace img
 			return me[fixedIndex(major_index, minor_index)];
 		}
 
-		constexpr uint width()const noexcept
+		constexpr size_t majorSize()const
 		{
-			return m_width;
+			if constexpr (M_ROW_MAJOR)	return width();
+			else						return height();
 		}
 
-		constexpr uint height()const noexcept
+		constexpr size_t minorSize()const
 		{
-			return m_height;
-		}
-
-		constexpr uint size()const noexcept
-		{
-			return m_size;
-		}
-
-		constexpr uint majorSize()const
-		{
-			if constexpr (M_ROW_MAJOR)	return m_width;
-			else						return m_height;
-		}
-
-		constexpr uint minorSize()const
-		{
-			if constexpr (M_ROW_MAJOR)	return m_height;
-			else						return m_width;
+			if constexpr (M_ROW_MAJOR)	return height();
+			else						return width();
 		}
 
 		template <class Function>
 		__forceinline void loop1D(Function const& function)const
 		{
-			for (uint i = 0; i < m_size; ++i)
+			for (size_t i = 0; i < size(); ++i)
 			{
 				function(i);
 			}
@@ -350,9 +244,9 @@ namespace img
 		__forceinline void loop2D(Function const& function)const
 		{
 			// TEST if a 1D loop is more efficient
-			for (uint minor = 0; minor < minorSize(); ++minor)
+			for (size_t minor = 0; minor < minorSize(); ++minor)
 			{
-				for (uint major = 0; major < majorSize(); ++major)
+				for (size_t major = 0; major < majorSize(); ++major)
 				{
 					if constexpr (M_ROW_MAJOR)
 						function(major, minor);
@@ -364,57 +258,45 @@ namespace img
 
 		constexpr T* data()
 		{
-			return m_data;
+			return (T*)rawData();
 		}
 
 		constexpr const T* data()const
 		{
-			return m_data;
+			return (const T*)rawData();
 		}
 
-		constexpr T const& operator[](uint index)const
+		constexpr T const& operator[](size_t index)const
 		{
-			return m_data[index];
+			return data()[index];
 		}
 
-		constexpr T& operator[](uint index)
+		constexpr T& operator[](size_t index)
 		{
-			return m_data[index];
+			return data()[index];
 		}
 
 		// i -- (column index)
 		// j |  (line index)
-		constexpr T const& operator()(uint i, uint j) const
+		constexpr T const& operator()(size_t i, size_t j) const
 		{
 			assert(i >= 0);
 			assert(j >= 0);
 			assert(i < width());
 			assert(j < height());
-			return m_data[index(i, j)];
+			return data()[index(i, j)];
 		}
 
 		// i -- (column index)
 		// j |  (line index)
-		constexpr T & operator()(uint i, uint j) 
+		constexpr T & operator()(size_t i, size_t j) 
 		{
 			assert(i >= 0);
 			assert(j >= 0);
 			assert(i < width());
 			assert(j < height());
-			return m_data[index(i, j)];
+			return data()[index(i, j)];
 		}
-		
-
-		// Assumes data is of the right size
-		template <class Q>
-		constexpr void setData(Q* data)noexcept
-		{
-			if (!empty())
-				delete[] m_data;
-			m_data = (T*)data;
-		}
-		
-		
 		
 		constexpr __img::ImageContent<T, M_ROW_MAJOR> content()const
 		{
@@ -422,6 +304,13 @@ namespace img
 		}
 	};
 
+}
+
+template <class Stream>
+Stream& operator<< (Stream & stream, img::FormatlessImage const& img)
+{
+	stream << "Image(w = " << img.width() << ", h = " << img.height() << ", buffer_size = " << img.byteSize() << ")";
+	return stream;
 }
 
 template <class Stream, class T, bool ROW_MAJOR>

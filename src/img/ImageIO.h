@@ -18,7 +18,7 @@ namespace img
 {
 	namespace io
 	{
-		using byte = unsigned char;
+		using byte = int8_t;
 		using pbyte = byte*;
 		
 		namespace netpbm
@@ -44,13 +44,14 @@ namespace img
 		template <class T>
 		constexpr T TypeMax()noexcept
 		{
-			if constexpr (std::is_floating_point<T>::value)
+			if constexpr (std::is_floating_point<T>::value) // Should "is_real", to include other representations (fixed)
 			{
 				return T(1);
 			}
 			else if constexpr (std::is_arithmetic<T>::value)
 			{
-				return T(255);
+				if constexpr (std::is_same<uint8_t, T>::value)
+					return T(255);
 			}
 			else if constexpr (math::Is_Vector<T>::value)
 			{
@@ -59,6 +60,7 @@ namespace img
 				else
 					return T(255);
 			}
+			// Should Static warning that the type was not found.
 			return T(1);
 		}
 
