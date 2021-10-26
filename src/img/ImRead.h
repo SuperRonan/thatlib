@@ -137,8 +137,8 @@ namespace img
 						if (mode == 6)
 						{
 							Image<RGBu, IMAGE_ROW_MAJOR> tmp(res.width(), res.height());
-							assert((end - ptr) >= tmp.bufferByteSize());
-							std::memcpy(tmp.begin(), ptr, tmp.bufferByteSize());
+							assert((end - ptr) >= tmp.byteSize());
+							std::memcpy(tmp.begin(), ptr, tmp.byteSize());
 							res = tmp;
 						}
 						else if (mode == 3)
@@ -228,19 +228,18 @@ namespace img
 				if (number_of_channels == 3)
 				{
 					Image<RGBu, RM> tmp(width, height);
-					std::memcpy(tmp.rawBegin(), data, tmp.byteSize());
+					std::memcpy(tmp.rawData(), data, tmp.byteSize());
 					res = tmp;
 				}
 				else if (number_of_channels == 4)
 				{
 					Image<RGBAu, RM> tmp(width, height);
-					std::memcpy(tmp.rawBegin(), data, tmp.byteSize());
+					std::memcpy(tmp.rawData(), data, tmp.byteSize());
 					res = tmp;
 				}
 				if(data)
 				{
-					delete[] data;
-					assert(false);
+					stbi_image_free(data);
 				}
 				
 				return res;

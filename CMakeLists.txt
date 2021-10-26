@@ -35,6 +35,6 @@ src/math/*
 src/img/*
 )
 
-SET(SOURCES src/img/Image.cpp src/img/stb_image.cpp src/img/ImRead.cpp src/img/ImWrite.cpp)
-
-ADD_LIBRARY(thatlib STATIC ${SOURCES} ${THAT_SOURCE})
+ADD_LIBRARY(thatlib STATIC ${THAT_SOURCE})
+SET_TARGET_PROPERTIES(thatlib PROPERTIES LINKER_LANGUAGE CXX)
+INSTALL(TARGETS thatlib DESTINATION lib)

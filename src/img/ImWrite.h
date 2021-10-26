@@ -1,18 +1,22 @@
 #pragma once
 
 #include "ImageIO.h"
+#include <string_view>
+#include <string>
+#include <stb/stb_image_write.h>
+#include <filesystem>
 
 namespace img
 {
 	namespace io
 	{
+
+
 		struct WriteInfo
 		{
 			bool is_default=true;
 
 			int magic_number=0;
-
-			static constexpr WriteInfo defaultInfo();
 		};
 
 		bool writeFile(byte* data, size_t size, const wchar_t* path);
@@ -124,9 +128,47 @@ namespace img
 			}
 		}
 		
+		namespace stbi
+		{
+			struct WriteContext
+			{
+				const wchar_t* path;
+			};
+
+			void writeFileCallback(void * context, void * data, int len);
+
+			template <class T, bool RM = IMAGE_ROW_MAJOR>
+			bool write(Image<T, RM> const& img, std::filesystem::path const& path)
+			{
+				if constexpr (RM == IMAGE_COL_MAJOR)
+				{
+					Image<T, IMAGE_ROW_MAJOR> tmp = img;
+					return write(tmp);
+				}
+
+				return false;
+			}
+
+			template <int N>
+			bool write(Image<math::Vector<N, uint8_t>> const& img, std::filesystem::path const& path)
+			{
+				const auto ext = path.extension();
+				WriteContext context{
+					.path = path.c_str(),
+				};
+				if (ext == ".png")
+				{
+					size_t stride = img.width() * N * sizeof(uint8_t);
+					stbi_write_png_to_func(writeFileCallback, &context, img.width(), img.height(), N, img.rawData(), stride);
+					//stbi_write_png(path.c_str(), img.width(), img.height(), 3, img.data(), 3);
+				}
+				// else if (ext == ".jpg" || ext == ".jpeg") // TODO
+				return true;
+			}
+		}
 
 		template <class T, bool RM=IMAGE_ROW_MAJOR>
-		bool write(Image<T, RM> const& img, std::filesystem::path const& path, WriteInfo info = WriteInfo::defaultInfo())
+		bool write(Image<T, RM> const& img, std::filesystem::path const& path, WriteInfo info = WriteInfo{})
 		{
 			if (img.empty())
 			{
@@ -139,6 +181,10 @@ namespace img
 				if (netpbm::isNetpbm(ext))
 				{
 					return netpbm::write(img, path.c_str(), info);
+				}
+				else if (stbi::canReadWrite(ext))
+				{
+					return stbi::write(img, path);
 				}
 				else
 				{

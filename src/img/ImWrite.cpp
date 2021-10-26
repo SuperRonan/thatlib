@@ -4,11 +4,6 @@ namespace img
 {
 	namespace io
 	{
-		constexpr WriteInfo WriteInfo::defaultInfo()
-		{
-			WriteInfo res;
-			return res;
-		}
 	
 		bool writeFile(byte* data, size_t size, const wchar_t* path)
 		{
@@ -22,6 +17,13 @@ namespace img
 			}
 			throw std::runtime_error(std::string("Could not open the file ") + convertWString(path));
 			return false;
+		}
+
+		void stbi::writeFileCallback(void* context, void* data, int len)
+		{
+			stbi::WriteContext* _context = (stbi::WriteContext *) context;
+			bool res = writeFile((byte*)data, len, _context->path);
+			assert(res);
 		}
 	
 	}

@@ -34,7 +34,7 @@ namespace img
 		{
 			__forceinline bool canReadWrite(std::wstring const& ext)
 			{
-				return ext == L".png" || ext == L".jpg";
+				return ext == L".png" || ext == L".jpg" || ext == L".jpeg";
 			}
 		}
 

@@ -55,7 +55,13 @@ namespace img
 
 	public:
 
-		constexpr FormatlessImage(size_t w = 0, size_t h = 0, size_t elem_size=1);
+		constexpr FormatlessImage(size_t w = 0, size_t h = 0, size_t elem_size=1):
+			_w(w),
+			_h(h),
+			_size(w* h),
+			_buffer(_size* elem_size)
+		{}
+
 		constexpr FormatlessImage(FormatlessImage const&) = default;
 		constexpr FormatlessImage(FormatlessImage&&) = default;
 
@@ -63,25 +69,70 @@ namespace img
 		constexpr FormatlessImage& operator=(FormatlessImage &&) = default;
 
 
-		constexpr size_t width()const;
-		constexpr size_t height()const;
-		constexpr size_t size() const;
-		constexpr size_t byteSize()const;
+		constexpr size_t width()const
+		{
+			return _w;
+		}
+		constexpr size_t height()const
+		{
+			return _h;
+		}
+		constexpr size_t size() const
+		{
+			return _size;
+		}
+		constexpr size_t byteSize()const
+		{
+			return _buffer.size();
+		}
 
-		constexpr const byte* rawData()const;
-		constexpr byte* rawData();
+		constexpr const byte* rawData()const
+		{
+			return _buffer.data();
+		}
+		constexpr byte* rawData()
+		{
+			return _buffer.data();
+		}
 
-		constexpr decltype(auto) rawBegin();
-		constexpr decltype(auto) rawBegin()const;
-		constexpr decltype(auto) rawCBegin()const;
+		constexpr typename std::vector<byte>::iterator rawBegin()
+		{
+			return _buffer.begin();
+		}
+		constexpr typename std::vector<byte>::const_iterator rawBegin()const
+		{
+			return _buffer.begin();
+		}
+		constexpr typename std::vector<byte>::const_iterator rawCBegin()const
+		{
+			return _buffer.cbegin();
+		}
 
-		constexpr decltype(auto) rawEnd();
-		constexpr decltype(auto) rawEnd()const;
-		constexpr decltype(auto) rawCEnd()const;
+		constexpr typename std::vector<byte>::iterator rawEnd()
+		{
+			return _buffer.end();
+		}
+		constexpr typename std::vector<byte>::const_iterator rawEnd()const
+		{
+			return _buffer.end();
+		}
+		constexpr typename std::vector<byte>::const_iterator rawCEnd()const
+		{
+			return _buffer.cend();
+		}
 
-		constexpr bool empty()const;
+		constexpr bool empty()const
+		{
+			return _size == 0;
+		}
 
-		constexpr void resize(size_t w = 0, size_t h = 0, size_t elem_size = 1);
+		constexpr void resize(size_t w = 0, size_t h = 0, size_t elem_size = 1)
+		{
+			_w = w;
+			_h = h;
+			_size = _w * _h;
+			_buffer.resize(_size * elem_size);
+		}
 
 	};
 
@@ -121,14 +172,18 @@ namespace img
 		using _Type = T;
 
 		constexpr Image(size_t width = 0, size_t height = 0) :
-			FormatlessImage(width, height)
+			FormatlessImage(width, height, sizeof(T))
 		{}
 
 		constexpr Image(size_t width, size_t height, T const& default_value) :
-			FormatlessImage(width, height)
+			FormatlessImage(width, height, sizeof(T))
 		{
 			std::fill(begin(), end(), default_value);
 		}
+
+		constexpr Image(Image const& other):
+			FormatlessImage(other)
+		{}
 
 		template<class Q, bool _ROW_MAJOR>
 		constexpr Image(Image<Q, _ROW_MAJOR> const& other) :
@@ -143,7 +198,7 @@ namespace img
 		{}
 
 		template<class Q, bool _ROW_MAJOR>
-		constexpr Image& operator=(Image<Q, _ROW_MAJOR> const& other)
+		constexpr Image& operator=(Image<Q, _ROW_MAJOR> const& other) noexcept
 		{
 			resize(other.width(), other.height(), other.elemSize());
 			copyData(other);
