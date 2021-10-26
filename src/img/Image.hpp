@@ -8,8 +8,6 @@
 #include <vector>
 #include <stdint.h>
 
-#include "../math/Vector.h"
-
 #define me (*this)
 
 namespace img
@@ -95,28 +93,28 @@ namespace img
 			return _buffer.data();
 		}
 
-		constexpr typename std::vector<byte>::iterator rawBegin()
+		constexpr typename decltype(auto) rawBegin()
 		{
 			return _buffer.begin();
 		}
-		constexpr typename std::vector<byte>::const_iterator rawBegin()const
+		constexpr typename decltype(auto) rawBegin()const
 		{
 			return _buffer.begin();
 		}
-		constexpr typename std::vector<byte>::const_iterator rawCBegin()const
+		constexpr typename decltype(auto) rawCBegin()const
 		{
 			return _buffer.cbegin();
 		}
 
-		constexpr typename std::vector<byte>::iterator rawEnd()
+		constexpr typename decltype(auto) rawEnd()
 		{
 			return _buffer.end();
 		}
-		constexpr typename std::vector<byte>::const_iterator rawEnd()const
+		constexpr typename decltype(auto) rawEnd()const
 		{
 			return _buffer.end();
 		}
-		constexpr typename std::vector<byte>::const_iterator rawCEnd()const
+		constexpr typename decltype(auto) rawCEnd()const
 		{
 			return _buffer.cend();
 		}

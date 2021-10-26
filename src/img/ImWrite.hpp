@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ImageIO.h"
+#include "ImageIO.hpp"
 #include <string_view>
 #include <string>
 #include <stb/stb_image_write.h>

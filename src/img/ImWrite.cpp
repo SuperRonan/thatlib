@@ -1,4 +1,4 @@
-#include "ImWrite.h"
+#include "ImWrite.hpp"
 
 namespace img
 {

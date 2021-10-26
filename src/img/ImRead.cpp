@@ -1,4 +1,4 @@
-#include "ImRead.h"
+#include "ImRead.hpp"
 
 namespace img
 {

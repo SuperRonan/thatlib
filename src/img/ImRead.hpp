@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ImageIO.h"
+#include "ImageIO.hpp"
 #include <stb/stb_image.h>
 
 namespace img

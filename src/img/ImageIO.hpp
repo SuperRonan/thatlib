@@ -10,9 +10,9 @@
 #include <vector>
 #include <cassert>
 
-#include "Image.h"
-#include "Color.h"
-#include "../math/Vector.h"
+#include "Image.hpp"
+#include "Color.hpp"
+#include "../math/Vector.hpp"
 
 namespace img
 {
