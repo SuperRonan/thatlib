@@ -248,6 +248,12 @@ namespace math
 			res /= t;
 			return res;
 		}
+
+		template <typename std::enable_if<N == 1>>
+		constexpr operator T()const noexcept
+		{
+			return me[0];
+		}
 	};
 
 	template <int N, class T, class Q>

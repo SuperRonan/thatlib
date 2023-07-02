@@ -4,11 +4,6 @@ namespace img
 {
 	namespace io
 	{
-		constexpr WriteInfo WriteInfo::defaultInfo()
-		{
-			WriteInfo res;
-			return res;
-		}
 	
 		bool writeFile(byte* data, size_t size, const wchar_t* path)
 		{

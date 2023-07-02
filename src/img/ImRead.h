@@ -139,7 +139,14 @@ namespace img
 							Image<RGBu, IMAGE_ROW_MAJOR> tmp(res.width(), res.height());
 							assert((end - ptr) >= tmp.bufferByteSize());
 							std::memcpy(tmp.begin(), ptr, tmp.bufferByteSize());
-							res = tmp;
+							if constexpr (std::is_convertible<RGBu, T>::value)
+							{
+								res = tmp;
+							}
+							else
+							{
+								std::cout << "Cannot convert image format" << std::endl;
+							}
 						}
 						else if (mode == 3)
 						{
@@ -225,17 +232,40 @@ namespace img
 					return res;
 				}
 				Image<T, RM> res(width, height);
-				if (number_of_channels == 3)
+
+				constexpr const bool T_is_byte = std::is_same<byte, T>::value;
+
+				if (number_of_channels == 1)
 				{
-					Image<RGBu, RM> tmp(width, height);
+					Image<byte, RM> tmp(width, height);
 					tmp.setData(data);
 					res = tmp;
 				}
+				else if (number_of_channels == 3)
+				{
+					if constexpr (T_is_byte)
+					{
+						std::cerr << "Cannot convert image format" << std::endl;
+					}
+					else
+					{
+						Image<RGBu, RM> tmp(width, height);
+						tmp.setData(data);
+						res = tmp;
+					}
+				}
 				else if (number_of_channels == 4)
 				{
-					Image<RGBAu, RM> tmp(width, height);
-					tmp.setData(data);
-					res = tmp;
+					if constexpr (T_is_byte)
+					{
+						std::cerr << "Cannot convert image format" << std::endl;
+					}
+					else
+					{
+						Image<RGBAu, RM> tmp(width, height);
+						tmp.setData(data);
+						res = tmp;
+					}
 				}
 				else
 				{

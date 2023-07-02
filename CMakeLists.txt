@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
 PROJECT("thatlib" VERSION 1.0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 ###############################################################
 #FIND_PACKAGE(ZLIB)
@@ -25,14 +25,17 @@ INCLUDE_DIRECTORIES(ext)
 
 ################################################################
 # THATLIB
+add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
+SET(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+
 SOURCE_GROUP(math REGULAR_EXPRESSION src/math/.*)
 SOURCE_GROUP(img REGULAR_EXPRESSION src/img/.*)
-
 INCLUDE_DIRECTORIES ( src )
 
 FILE(GLOB THAT_SOURCE 
-src/math/*
-src/img/*
+	src/math/*
+	src/img/*
 )
 
 SET(SOURCES src/img/stb_image.cpp src/img/ImRead.cpp src/img/ImWrite.cpp)
