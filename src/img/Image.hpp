@@ -48,7 +48,7 @@ namespace img
 
 		// In elements
 		size_t _w, _h, _size;
-		std::vector<int8_t> _buffer;
+		std::vector<byte> _buffer;
 
 
 	public:

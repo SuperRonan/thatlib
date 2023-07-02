@@ -24,6 +24,9 @@ namespace img
 	using RGB = Spectrum<3, T>;
 
 	template <class T>
+	using Grey = Spectrum<1, T>;
+
+	template <class T>
 	struct RGBA
 	{
 		RGB<T> rgb;
@@ -61,6 +64,11 @@ namespace img
 		{
 			return rgb;
 		}
+
+		constexpr operator Grey<T>()const
+		{
+			return rgb[0];
+		}
 	};
 
 	template <class T>
@@ -74,6 +82,12 @@ namespace img
 
 	template <class T>
 	class is_RGBA<RGBA<T>> : public std::true_type {};
+
+	template <class T>
+	class is_Grey : public std::false_type {};
+
+	template <class T>
+	class is_Grey<Grey<T>> : public std::true_type {};
 }
 
 namespace std

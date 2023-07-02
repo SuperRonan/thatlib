@@ -9,16 +9,18 @@
 #include <exception>
 #include <vector>
 #include <cassert>
+#include <format>
 
 #include "Image.hpp"
 #include "Color.hpp"
 #include "../math/Vector.hpp"
 
+
 namespace img
 {
 	namespace io
 	{
-		using byte = int8_t;
+		using byte = uint8_t;
 		using pbyte = byte*;
 		
 		namespace netpbm
@@ -40,6 +42,7 @@ namespace img
 
 		using RGBu = RGB<unsigned char>;
 		using RGBAu = RGBA<unsigned char>;
+		using Grey8u = Grey<uint8_t>;
 
 		template <class T>
 		constexpr T TypeMax()noexcept
@@ -55,7 +58,7 @@ namespace img
 			}
 			else if constexpr (math::Is_Vector<T>::value)
 			{
-				if constexpr (std::is_floating_point<T::_Type>::value)
+				if constexpr (std::is_floating_point<typename T::_Type>::value)
 					return T(1);
 				else
 					return T(255);
@@ -64,9 +67,13 @@ namespace img
 			return T(1);
 		}
 
-		__forceinline std::string convertWString(std::wstring const& wstr)
+		inline std::string convertWString(std::wstring const& wstr)
 		{
-			return std::string(wstr.begin(), wstr.end());
+			std::string res;
+			res.resize(wstr.size());
+			std::transform(wstr.begin(), wstr.end(), res.begin(), [](wchar_t wc) {return static_cast<char>(wc); });
+			return res;
+			//return std::string(wstr.begin(), wstr.end());
 		}
 	}
 }

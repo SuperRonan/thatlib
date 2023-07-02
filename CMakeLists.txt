@@ -25,14 +25,17 @@ INCLUDE_DIRECTORIES(ext)
 
 ################################################################
 # THATLIB
+add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
+SET(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+
 SOURCE_GROUP(math REGULAR_EXPRESSION src/math/.*)
 SOURCE_GROUP(img REGULAR_EXPRESSION src/img/.*)
-
 INCLUDE_DIRECTORIES ( src )
 
 FILE(GLOB THAT_SOURCE 
-src/math/*
-src/img/*
+	src/math/*
+	src/img/*
 )
 
 ADD_LIBRARY(thatlib STATIC ${THAT_SOURCE})

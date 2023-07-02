@@ -6,6 +6,8 @@
 #include <stb/stb_image_write.h>
 #include <filesystem>
 
+#include <stb/stb_image_write.h>
+
 namespace img
 {
 	namespace io
@@ -17,6 +19,12 @@ namespace img
 			bool is_default=true;
 
 			int magic_number=0;
+
+			static constexpr WriteInfo defaultInfo()
+			{
+				WriteInfo res;
+				return res;
+			}
 		};
 
 		bool writeFile(byte* data, size_t size, const wchar_t* path);
@@ -30,20 +38,24 @@ namespace img
 					3 + // magic number
 					width.size() + 1 + 
 					height.size() + 1 + 
-					(((magic_number == 1) | (magic_number == 4)) ? 0 : (max_value.size() + 1));
+					(((magic_number == 1) || (magic_number == 4)) ? 0 : (max_value.size() + 1));
 			}
 
 			__forceinline size_t contentSize(int magic_number, size_t number_of_pixels)
 			{
 				size_t size_per_pixel;
-				if (magic_number == 6)
+				if (magic_number == 5)
 				{
-					// 1 byte pdf channel, 3 channel per pixels
+					size_per_pixel = 1;
+				}
+				else if (magic_number == 6)
+				{
+					// 1 byte per channel, 3 channel per pixels
 					size_per_pixel = 3;
 				}
 				else
 				{
-					size_per_pixel = 100;
+					size_per_pixel = 0;
 				}
 				return size_per_pixel * number_of_pixels;
 			}
@@ -69,7 +81,7 @@ namespace img
 				
 				write(height, ptr);
 
-				if ((magic_number != 1) & (magic_number != 4))
+				if ((magic_number != 1) && (magic_number != 4))
 				{
 					write(max_value, ptr);
 				}
@@ -104,6 +116,7 @@ namespace img
 				size_t content_size = contentSize(info.magic_number, img.size());
 				size_t total_size = header_size + content_size;
 				std::vector<byte> file_data(total_size);
+				std::memcpy(file_data.data(), img.data(), total_size);
 				byte* ptr = file_data.data();
 				const byte * const _ptr = ptr;
 				writeHeader(ptr, info.magic_number, width, height, max_value);
@@ -136,34 +149,38 @@ namespace img
 			};
 
 			void writeFileCallback(void * context, void * data, int len);
-
-			template <class T, bool RM = IMAGE_ROW_MAJOR>
+		
+			template <class T, bool RM=IMAGE_ROW_MAJOR>
 			bool write(Image<T, RM> const& img, std::filesystem::path const& path)
 			{
-				if constexpr (RM == IMAGE_COL_MAJOR)
-				{
-					Image<T, IMAGE_ROW_MAJOR> tmp = img;
-					return write(tmp);
-				}
-
-				return false;
-			}
-
-			template <int N>
-			bool write(Image<math::Vector<N, uint8_t>> const& img, std::filesystem::path const& path)
-			{
-				const auto ext = path.extension();
+				const std::string ext = path.extension().string();
 				WriteContext context{
 					.path = path.c_str(),
 				};
 				if (ext == ".png")
 				{
-					size_t stride = img.width() * N * sizeof(uint8_t);
-					stbi_write_png_to_func(writeFileCallback, &context, img.width(), img.height(), N, img.rawData(), stride);
-					//stbi_write_png(path.c_str(), img.width(), img.height(), 3, img.data(), 3);
+					int comp = 0;
+					if constexpr (std::is_same<io::byte, T>::value)
+					{
+						comp = 1;
+					}
+					if constexpr (is_RGB<T>::value)
+					{
+						comp = 3;
+					}
+					if constexpr (is_RGBA<T>::value)
+					{
+						comp = 4;
+					}
+
+					if (comp != 0)
+					{
+						stbi_write_png_to_func(writeFileCallback, &context, img.width(), img.height(), comp, img.rawData(), 0);
+						//stbi_write_png(path.string().c_str(), img.width(), img.height(), comp, img.data(), 0);
+						return true;
+					}
 				}
-				// else if (ext == ".jpg" || ext == ".jpeg") // TODO
-				return true;
+				return false;
 			}
 		}
 

@@ -139,7 +139,14 @@ namespace img
 							Image<RGBu, IMAGE_ROW_MAJOR> tmp(res.width(), res.height());
 							assert((end - ptr) >= tmp.byteSize());
 							std::memcpy(tmp.begin(), ptr, tmp.byteSize());
-							res = tmp;
+							if constexpr (std::is_convertible<RGBu, T>::value)
+							{
+								res = tmp;
+							}
+							else
+							{
+								std::cout << "Cannot convert image format" << std::endl;
+							}
 						}
 						else if (mode == 3)
 						{
@@ -218,24 +225,47 @@ namespace img
 						stbi_image_free(data);
 					return Image<T, RM>();
 				}
-				if (width <= 0 | height <= 0 | number_of_channels <= 0)
+				if (width <= 0 || height <= 0 || number_of_channels <= 0)
 				{
 					std::cerr<<"STB could not open the image: "<< stbi_failure_reason();
 					Image<T, RM> res;
 					return res;
 				}
 				Image<T, RM> res(width, height);
-				if (number_of_channels == 3)
+
+				constexpr const bool T_is_byte = std::is_same<byte, T>::value;
+
+				if (number_of_channels == 1)
 				{
-					Image<RGBu, RM> tmp(width, height);
-					std::memcpy(tmp.rawData(), data, tmp.byteSize());
+					Image<byte, RM> tmp(width, height);
+					std::memcpy(tmp.rawData(), data, width * height);
 					res = tmp;
+				}
+				else if (number_of_channels == 3)
+				{
+					if constexpr (T_is_byte)
+					{
+						std::cerr << "Cannot convert image format" << std::endl;
+					}
+					else
+					{
+						Image<RGBu, RM> tmp(width, height);
+						tmp.setData(data);
+						res = tmp;
+					}
 				}
 				else if (number_of_channels == 4)
 				{
-					Image<RGBAu, RM> tmp(width, height);
-					std::memcpy(tmp.rawData(), data, tmp.byteSize());
-					res = tmp;
+					if constexpr (T_is_byte)
+					{
+						std::cerr << "Cannot convert image format" << std::endl;
+					}
+					else
+					{
+						Image<RGBAu, RM> tmp(width, height);
+						tmp.setData(data);
+						res = tmp;
+					}
 				}
 				if(data)
 				{
