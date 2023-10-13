@@ -25,9 +25,9 @@ INCLUDE_DIRECTORIES(ext)
 
 ################################################################
 # THATLIB
-add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+ADD_COMPILE_DEFINITIONS($<IF:$<CONFIG:Debug>,_ITERATOR_DEBUG_LEVEL=2,_ITERATOR_DEBUG_LEVEL=0>)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
-SET(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 SOURCE_GROUP(math REGULAR_EXPRESSION src/math/.*)
 SOURCE_GROUP(img REGULAR_EXPRESSION src/img/.*)
