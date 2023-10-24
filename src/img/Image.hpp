@@ -53,11 +53,11 @@ namespace img
 
 	public:
 
-		constexpr FormatlessImage(size_t w = 0, size_t h = 0, size_t elem_size=1):
+		constexpr FormatlessImage(size_t w = 0, size_t h = 0, size_t pixel_size=1):
 			_w(w),
 			_h(h),
-			_size(w* h),
-			_buffer(_size* elem_size)
+			_size(w * h),
+			_buffer(_size * pixel_size)
 		{}
 
 		constexpr FormatlessImage(FormatlessImage const&) = default;
@@ -124,14 +124,187 @@ namespace img
 			return _size == 0;
 		}
 
-		constexpr void resize(size_t w = 0, size_t h = 0, size_t elem_size = 1)
+		constexpr void resize(size_t w = 0, size_t h = 0, size_t pixel_size = 1)
 		{
 			_w = w;
 			_h = h;
 			_size = _w * _h;
-			_buffer.resize(_size * elem_size);
+			_buffer.resize(_size * pixel_size);
 		}
 
+	};
+
+	enum ElementType
+	{
+		UNORM = 1,
+		SNORM = 2,
+		UINT = 5,
+		SINT = 6,
+		sRGB = 7,
+		FLOAT = 9,
+	};
+
+	struct FormatInfo
+	{
+		ElementType type;
+		uint32_t elem_size;
+		uint32_t channels;
+	};
+
+	class FormatedImage : public FormatlessImage
+	{
+	protected:
+
+		FormatInfo _format = {};
+		uint32_t _pixel_size = 0;
+		bool _row_major = false;
+
+	public:
+
+		FormatedImage() = default;
+
+		FormatedImage(size_t w, size_t h, FormatInfo format, bool row_major = true):
+			FormatlessImage(w, h, format.elem_size * format.channels),
+			_format(format),
+			_pixel_size(_format.elem_size * _format.channels),
+			_row_major(row_major)
+		{}
+
+		FormatedImage(FormatedImage const& other) :
+			FormatlessImage(other),
+			_format(other._format),
+			_pixel_size(other._pixel_size),
+			_row_major(other._row_major)
+		{}
+
+		FormatedImage(FormatedImage && other) noexcept :
+			FormatlessImage(std::move(other)),
+			_format(other._format),
+			_pixel_size(other._pixel_size),
+			_row_major(other._row_major)
+		{}
+
+		FormatedImage& operator=(FormatedImage const& other)
+		{
+			FormatlessImage::operator=(other);
+			_format = other._format;
+			_pixel_size = other._pixel_size;
+			_row_major = other._row_major;
+			return *this;
+		}
+
+		FormatedImage& operator=(FormatedImage&& other) noexcept
+		{
+			FormatlessImage::operator=(std::move(other));
+			std::swap(_format, other._format);
+			std::swap(_pixel_size, other._pixel_size);
+			std::swap(_row_major, other._row_major);
+			return *this;
+		}
+
+		constexpr FormatInfo format()const
+		{
+			return _format;
+		}
+
+		constexpr size_t pixelSize()const
+		{
+			return _pixel_size;
+		}
+
+		constexpr bool rowMajor()const
+		{
+			return _row_major;
+		}
+
+		size_t pixelLinearIndex(size_t x, size_t y) const
+		{
+			const size_t res = _row_major ? (y * _w + x) : (x * _h + y);
+			return res;
+		}
+
+		byte* getPixelPtr(size_t i)
+		{
+			return rawData() + i * _pixel_size;
+		}
+
+		const byte* getPixelPtr(size_t i) const
+		{
+			return rawData() + i * _pixel_size;
+		}
+
+		byte* getPixelPtr(size_t x, size_t y)
+		{
+			return getPixelPtr(pixelLinearIndex(x, y));
+		}
+
+		const byte* getPixelPtr(size_t x, size_t y) const
+		{
+			return getPixelPtr(pixelLinearIndex(x, y));
+		}
+
+		template <class PixelType>
+		PixelType& pixel(size_t x, size_t y)
+		{
+			const size_t i = pixelLinearIndex(x, y);
+			PixelType* t_data = static_cast<PixelType*>(rawData());
+			return t_data[i];
+		}
+
+		template <class PixelType>
+		const PixelType& pixel(size_t x, size_t y) const
+		{
+			const size_t i = pixelLinearIndex(x, y);
+			const PixelType* t_data = static_cast<const PixelType*>(rawData());
+			return t_data[i];
+		}
+
+		template <class ElemType>
+		ElemType& pixelComp(size_t x, size_t y, uint32_t c)
+		{
+			const size_t i = pixelLinearIndex(x, y);
+			ElemType * t_data = static_cast<ElementType*>(rawData());
+			return t_data[i * _format.channels + c];
+		}
+
+		template <class ElemType>
+		const ElemType& pixelComp(size_t x, size_t y, uint32_t c)
+		{
+			const size_t i = pixelLinearIndex(x, y);
+			const ElemType* t_data = static_cast<const ElementType*>(rawData());
+			return t_data[i * _format.channels + c];
+		}
+
+		bool reFormat(FormatInfo const& new_format)
+		{
+			bool res = false;
+			const FormatedImage & old = *this;
+			FormatedImage reformated = FormatedImage(old.width(), old.height(), new_format, old.rowMajor());
+			
+			if (old.format().type == reformated.format().type)
+			{
+				if (old.format().elem_size == reformated.format().elem_size)
+				{
+					// For each pixel
+					for (size_t i = 0; i < reformated.size(); ++i)
+					{
+						const byte* old_pixel = old.getPixelPtr(i);
+						byte* new_pixel = reformated.getPixelPtr(i);
+						// For the last pixel: we read some bytes after the end of the buffer, hope it won't be and issue
+						std::memcpy(new_pixel, old_pixel, reformated.pixelSize());
+					}
+
+					res = true;
+				}
+			}
+			
+			if (res)
+			{
+				*this = std::move(reformated);
+			}
+
+			return res;
+		}
 	};
 
 	// It is easier to move on major

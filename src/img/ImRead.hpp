@@ -55,7 +55,7 @@ namespace img
 				}
 			}
 
-			__forceinline int get_int(pbyte& ptr, const pbyte end)
+			__forceinline int eat_int(pbyte& ptr, const pbyte end)
 			{
 				eat_white(ptr, end);
 				int v = atoi((char*)ptr);
@@ -73,6 +73,8 @@ namespace img
 					eat_line(ptr, end);
 				}
 			}
+
+			FormatedImage readFormatedImage(const std::filesystem::path& path);
 
 			template <class T, bool RM = IMAGE_ROW_MAJOR>
 			Image<T, RM> read(const wchar_t* name, T T_max)
@@ -114,11 +116,11 @@ namespace img
 
 						// get w
 						eat_comment(ptr, end);
-						header.width = get_int(ptr, end);
+						header.width = eat_int(ptr, end);
 
 						// get h
 						eat_comment(ptr, end);
-						header.height = get_int(ptr, end);
+						header.height = eat_int(ptr, end);
 
 						double max_value;
 						if ((mode == 1 || mode == 4))
@@ -128,7 +130,7 @@ namespace img
 						else
 						{
 							eat_comment(ptr, end);
-							header.max_value = get_int(ptr, end);
+							header.max_value = eat_int(ptr, end);
 							max_value = header.max_value;
 						}
 
@@ -153,9 +155,9 @@ namespace img
 							for (int i = 0; i < res.size(); i++)
 							{
 								RGBd ppm_pixel;
-								ppm_pixel[0] = get_int(ptr, end);
-								ppm_pixel[1] = get_int(ptr, end);
-								ppm_pixel[2] = get_int(ptr, end);
+								ppm_pixel[0] = eat_int(ptr, end);
+								ppm_pixel[1] = eat_int(ptr, end);
+								ppm_pixel[2] = eat_int(ptr, end);
 								eat_comment(ptr, end);
 								T t;
 								if constexpr (math::Is_Vector<T>::value)
@@ -170,7 +172,7 @@ namespace img
 							for (int i = 0; i < res.size(); i++)
 							{
 								double ppm_pixel;
-								ppm_pixel = get_int(ptr, end);
+								ppm_pixel = eat_int(ptr, end);
 								eat_comment(ptr, end);
 								T t = (ppm_pixel / max_value) * T_max;
 								res[i] = t;
@@ -199,10 +201,14 @@ namespace img
 				}
 				return res;
 			}
+
+			
 		}
 
 		namespace stbi
 		{
+			FormatedImage readFormatedImage(std::filesystem::path const& path);
+
 			template <class T, bool RM = IMAGE_ROW_MAJOR>
 			Image<T, RM> read(const wchar_t* path)
 			{
@@ -276,6 +282,8 @@ namespace img
 			}
 		}
 		
+		FormatedImage readFormatedImage(std::filesystem::path const& path);
+
 		template <class T, bool RM = true>
 		Image<T, RM> read(std::filesystem::path const& path)
 		{
