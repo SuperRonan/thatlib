@@ -47,13 +47,15 @@ namespace img
 		using byte = int8_t;
 
 		// In elements
-		size_t _w, _h, _size;
-		std::vector<byte> _buffer;
+		size_t _w = 0, _h = 0, _size = 0;
+		std::vector<byte> _buffer = {};
 
 
 	public:
 
-		constexpr FormatlessImage(size_t w = 0, size_t h = 0, size_t pixel_size=1):
+		constexpr FormatlessImage() = default;
+
+		constexpr FormatlessImage(size_t w, size_t h, size_t pixel_size=1):
 			_w(w),
 			_h(h),
 			_size(w * h),
