@@ -1,6 +1,6 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+cmake_minimum_required(VERSION 3.10)
 
-PROJECT("thatlib" VERSION 1.0 LANGUAGES CXX)
+project("thatlib" VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 
 ###############################################################
@@ -19,25 +19,27 @@ set(CMAKE_CXX_STANDARD 20)
 #ENDIF()
 #INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 
-################################################################
-# STB
-INCLUDE_DIRECTORIES(ext)
-
-################################################################
-# THATLIB
-ADD_COMPILE_DEFINITIONS($<IF:$<CONFIG:Debug>,_ITERATOR_DEBUG_LEVEL=2,_ITERATOR_DEBUG_LEVEL=0>)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-
-SOURCE_GROUP(math REGULAR_EXPRESSION src/math/.*)
-SOURCE_GROUP(img REGULAR_EXPRESSION src/img/.*)
-INCLUDE_DIRECTORIES ( src )
-
-FILE(GLOB THAT_SOURCE 
+file(GLOB THAT_SOURCE 
 	src/math/*
 	src/img/*
 )
+add_library(thatlib STATIC ${THAT_SOURCE})
+set_target_properties(thatlib PROPERTIES LINKER_LANGUAGE CXX)
 
-ADD_LIBRARY(thatlib STATIC ${THAT_SOURCE})
-SET_TARGET_PROPERTIES(thatlib PROPERTIES LINKER_LANGUAGE CXX)
-INSTALL(TARGETS thatlib DESTINATION lib)
+
+################################################################
+# STB
+target_include_directories(thatlib PUBLIC ext)
+
+################################################################
+# THATLIB
+target_compile_definitions(thatlib PUBLIC $<IF:$<CONFIG:Debug>,_ITERATOR_DEBUG_LEVEL=2,_ITERATOR_DEBUG_LEVEL=0>)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
+source_group(math REGULAR_EXPRESSION src/math/.*)
+source_group(img REGULAR_EXPRESSION src/img/.*)
+target_include_directories(thatlib PUBLIC src)
+
+
+install(TARGETS thatlib DESTINATION lib)
