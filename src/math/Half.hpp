@@ -146,3 +146,23 @@ namespace math
 
 	using float16_t = Half;
 }
+
+namespace std
+{
+	// TODO correctly
+	// Since the Half type is only for storage, and not for computation, we can get aways with these values not being correct
+	template <>
+	class numeric_limits<math::Half> : public std::numeric_limits<float>
+	{
+		static constexpr int digits = 11;
+		static constexpr int digits10 = 3;
+		static constexpr int max_digits10 = 4; //???
+		static constexpr int max_exponent = 15;
+		static constexpr int max_exponent10 = 4;
+		static constexpr int min_exponent = -14;
+		static constexpr int min_exponent10 = -4;
+	};
+
+	template<>
+	struct is_floating_point<math::Half> : public std::true_type {};
+}
