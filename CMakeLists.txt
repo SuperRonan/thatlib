@@ -20,6 +20,7 @@ set(CMAKE_CXX_STANDARD 20)
 #INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 
 file(GLOB THAT_SOURCE 
+	src/core/*
 	src/math/*
 	src/img/*
 )
@@ -37,6 +38,7 @@ target_compile_definitions(thatlib PUBLIC $<IF:$<CONFIG:Debug>,_ITERATOR_DEBUG_L
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
+source_group(core REGULAR_EXPRESSION src/core/.*)
 source_group(math REGULAR_EXPRESSION src/math/.*)
 source_group(img REGULAR_EXPRESSION src/img/.*)
 target_include_directories(thatlib PUBLIC src)

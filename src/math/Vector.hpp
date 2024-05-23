@@ -7,292 +7,296 @@
 
 #define me (*this)
 
-
-namespace math
+namespace that
 {
-	template <int N, class T>
-	class Vector
+
+	namespace math
 	{
-	protected:
-
-		T m_data[N];
-
-	public:
-
-		using _Type = T;
-
-		static constexpr int size() noexcept
+		template <int N, class T>
+		class Vector
 		{
-			return N;
-		}
+		protected:
 
-		constexpr Vector() noexcept
-		{
-			// This assumes a 0 of T is made of bytes 0
-			std::memset(m_data, 0, N * sizeof T);
-		}
+			T m_data[N];
 
-		template <class Q, class... Args>
-		constexpr Vector(Q const& q, Args const& ... values) noexcept
-		{
-			constexpr int M = sizeof...(Args);
-			if constexpr (M == 0)
+		public:
+
+			using _Type = T;
+
+			static constexpr int size() noexcept
 			{
-				std::fill(begin(), end(), q);
+				return N;
 			}
-			else
+
+			constexpr Vector() noexcept
 			{
-				static_assert(M == N - 1, "Vector variadic constructor: the number of args should be the same as the size!");
-				m_data[0] = q;
-				int i = 1;
-				((m_data[i++] = values), ...);
+				// This assumes a 0 of T is made of bytes 0
+				std::memset(m_data, 0, N * sizeof T);
 			}
-		}
+
+			template <class Q, class... Args>
+			constexpr Vector(Q const& q, Args const& ... values) noexcept
+			{
+				constexpr int M = sizeof...(Args);
+				if constexpr (M == 0)
+				{
+					std::fill(begin(), end(), q);
+				}
+				else
+				{
+					static_assert(M == N - 1, "Vector variadic constructor: the number of args should be the same as the size!");
+					m_data[0] = q;
+					int i = 1;
+					((m_data[i++] = values), ...);
+				}
+			}
 		
-		template <class Q>
-		constexpr Vector(Vector<N, Q> const& other) noexcept
-		{
-			if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
+			template <class Q>
+			constexpr Vector(Vector<N, Q> const& other) noexcept
 			{
-				std::memcpy(m_data, other.m_data, N * sizeof T);
+				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
+				{
+					std::memcpy(m_data, other.m_data, N * sizeof T);
+				}
+				else
+				{
+					std::copy(other.cbegin(), other.cend(), begin());
+				}
 			}
-			else
+
+			constexpr Vector(Vector const& other) noexcept
 			{
-				std::copy(other.cbegin(), other.cend(), begin());
+				if constexpr (std::is_trivially_copyable<T>::value)
+				{
+					std::memcpy(m_data, other.m_data, N * sizeof T);
+				}
+				else
+				{
+					std::copy(other.cbegin(), other.cend(), begin());
+				}
 			}
-		}
 
-		constexpr Vector(Vector const& other) noexcept
-		{
-			if constexpr (std::is_trivially_copyable<T>::value)
+			template <class Q>
+			constexpr Vector& operator=(Vector<N, Q> const& other) noexcept
 			{
-				std::memcpy(m_data, other.m_data, N * sizeof T);
+				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
+				{
+					std::memcpy(m_data, other.m_data, N * sizeof T);
+				}
+				else
+				{
+					std::copy(other.cbegin(), other.cend(), begin());
+				}
+				return me;
 			}
-			else
+
+			constexpr Vector& operator=(Vector const& other) noexcept
 			{
-				std::copy(other.cbegin(), other.cend(), begin());
+				if constexpr (std::is_trivially_copyable<T>::value)
+				{
+					std::memcpy(m_data, other.m_data, N * sizeof T);
+				}
+				else
+				{
+					std::copy(other.cbegin(), other.cend(), begin());
+				}
+				return me;
 			}
-		}
 
-		template <class Q>
-		constexpr Vector& operator=(Vector<N, Q> const& other) noexcept
-		{
-			if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
+			constexpr T& operator[](int i) noexcept
 			{
-				std::memcpy(m_data, other.m_data, N * sizeof T);
+				assert(i >= 0);
+				assert(i < N);
+				return m_data[i];
 			}
-			else
+
+			constexpr T const& operator[](int i)const noexcept
 			{
-				std::copy(other.cbegin(), other.cend(), begin());
+				assert(i >= 0);
+				assert(i < N);
+				return m_data[i];
 			}
-			return me;
-		}
 
-		constexpr Vector& operator=(Vector const& other) noexcept
-		{
-			if constexpr (std::is_trivially_copyable<T>::value)
+			constexpr T* begin() noexcept
 			{
-				std::memcpy(m_data, other.m_data, N * sizeof T);
+				return m_data;
 			}
-			else
+
+			constexpr T* end() noexcept
 			{
-				std::copy(other.cbegin(), other.cend(), begin());
+				return m_data + N;
 			}
-			return me;
-		}
 
-		constexpr T& operator[](int i) noexcept
-		{
-			assert(i >= 0);
-			assert(i < N);
-			return m_data[i];
-		}
+			constexpr const T* begin()const noexcept
+			{
+				return m_data;
+			}
 
-		constexpr T const& operator[](int i)const noexcept
-		{
-			assert(i >= 0);
-			assert(i < N);
-			return m_data[i];
-		}
+			constexpr const T* end()const noexcept
+			{
+				return m_data + N;
+			}
 
-		constexpr T* begin() noexcept
-		{
-			return m_data;
-		}
+			constexpr const T* cbegin()const noexcept
+			{
+				return m_data;
+			}
 
-		constexpr T* end() noexcept
-		{
-			return m_data + N;
-		}
+			constexpr const T* cend()const noexcept
+			{
+				return m_data + N;
+			}
 
-		constexpr const T* begin()const noexcept
-		{
-			return m_data;
-		}
+			template <class Q>
+			constexpr Vector& operator+=(Vector<N, Q> const& other) noexcept
+			{
+				for (int i = 0; i < N; ++i)
+				{
+					me[i] += other[i];
+				}
+				return me;
+			}
 
-		constexpr const T* end()const noexcept
-		{
-			return m_data + N;
-		}
+			template <class Q>
+			constexpr Vector& operator-=(Vector<N, Q> const& other) noexcept
+			{
+				for (int i = 0; i < N; ++i)
+				{
+					me[i] -= other[i];
+				}
+				return me;
+			}
 
-		constexpr const T* cbegin()const noexcept
-		{
-			return m_data;
-		}
+			template <class Q>
+			constexpr Vector& operator*=(Vector<N, Q> const& other) noexcept
+			{
+				for (int i = 0; i < N; ++i)
+				{
+					me[i] *= other[i];
+				}
+				return me;
+			}
 
-		constexpr const T* cend()const noexcept
-		{
-			return m_data + N;
-		}
+			template <class Q>
+			constexpr Vector& operator/=(Vector<N, Q> const& other) noexcept
+			{
+				for (int i = 0; i < N; ++i)
+				{
+					me[i] /= other[i];
+				}
+				return me;
+			}
 
-		template <class Q>
-		constexpr Vector& operator+=(Vector<N, Q> const& other) noexcept
+			template <class Q>
+			constexpr Vector operator+(Vector<N, Q> const& other)const noexcept
+			{
+				Vector res = me;
+				res += other;
+				return res;
+			}
+
+			template <class Q>
+			constexpr Vector operator-(Vector<N, Q> const& other)const noexcept
+			{
+				Vector res = me;
+				res -= other;
+				return res;
+			}
+
+			template <class Q>
+			constexpr Vector operator*(Vector<N, Q> const& other)const noexcept
+			{
+				Vector res = me;
+				res *= other;
+				return res;
+			}
+
+			template <class Q>
+			constexpr Vector operator/(Vector<N, Q> const& other)const noexcept
+			{
+				Vector res = me;
+				res /= other;
+				return res;
+			}
+
+			constexpr Vector& operator*=(T const& t) noexcept
+			{
+				for (int i = 0; i < N; ++i)
+				{
+					me[i] *= t;
+				}
+				return me;
+			}
+
+			constexpr Vector& operator/=(T const& t) noexcept
+			{
+				for (int i = 0; i < N; ++i)
+				{
+					me[i] /= t;
+				}
+				return me;
+			}
+
+			constexpr Vector operator*(T const& t)const noexcept
+			{
+				Vector res = me;
+				res *= t;
+				return res;
+			}
+
+			constexpr Vector operator/(T const& t)const noexcept
+			{
+				Vector res = me;
+				res /= t;
+				return res;
+			}
+
+			template <typename std::enable_if<N == 1>>
+			constexpr operator T()const noexcept
+			{
+				return me[0];
+			}
+		};
+
+		template <int N, class T, class Q>
+		constexpr T dot(Vector<N, T> const& t, Vector<N, Q> const& q) noexcept
 		{
+			T res(0);
 			for (int i = 0; i < N; ++i)
-			{
-				me[i] += other[i];
-			}
-			return me;
-		}
-
-		template <class Q>
-		constexpr Vector& operator-=(Vector<N, Q> const& other) noexcept
-		{
-			for (int i = 0; i < N; ++i)
-			{
-				me[i] -= other[i];
-			}
-			return me;
-		}
-
-		template <class Q>
-		constexpr Vector& operator*=(Vector<N, Q> const& other) noexcept
-		{
-			for (int i = 0; i < N; ++i)
-			{
-				me[i] *= other[i];
-			}
-			return me;
-		}
-
-		template <class Q>
-		constexpr Vector& operator/=(Vector<N, Q> const& other) noexcept
-		{
-			for (int i = 0; i < N; ++i)
-			{
-				me[i] /= other[i];
-			}
-			return me;
-		}
-
-		template <class Q>
-		constexpr Vector operator+(Vector<N, Q> const& other)const noexcept
-		{
-			Vector res = me;
-			res += other;
+				res += t[i] * q[i];
 			return res;
 		}
 
-		template <class Q>
-		constexpr Vector operator-(Vector<N, Q> const& other)const noexcept
-		{
-			Vector res = me;
-			res -= other;
-			return res;
-		}
+		template <typename _Ty>
+		struct Is_Vector : std::false_type {};
 
-		template <class Q>
-		constexpr Vector operator*(Vector<N, Q> const& other)const noexcept
-		{
-			Vector res = me;
-			res *= other;
-			return res;
-		}
-
-		template <class Q>
-		constexpr Vector operator/(Vector<N, Q> const& other)const noexcept
-		{
-			Vector res = me;
-			res /= other;
-			return res;
-		}
-
-		constexpr Vector& operator*=(T const& t) noexcept
-		{
-			for (int i = 0; i < N; ++i)
-			{
-				me[i] *= t;
-			}
-			return me;
-		}
-
-		constexpr Vector& operator/=(T const& t) noexcept
-		{
-			for (int i = 0; i < N; ++i)
-			{
-				me[i] /= t;
-			}
-			return me;
-		}
-
-		constexpr Vector operator*(T const& t)const noexcept
-		{
-			Vector res = me;
-			res *= t;
-			return res;
-		}
-
-		constexpr Vector operator/(T const& t)const noexcept
-		{
-			Vector res = me;
-			res /= t;
-			return res;
-		}
-
-		template <typename std::enable_if<N == 1>>
-		constexpr operator T()const noexcept
-		{
-			return me[0];
-		}
-	};
-
-	template <int N, class T, class Q>
-	constexpr T dot(Vector<N, T> const& t, Vector<N, Q> const& q) noexcept
-	{
-		T res(0);
-		for (int i = 0; i < N; ++i)
-			res += t[i] * q[i];
-		return res;
+		template<int N, class T>
+		struct Is_Vector<Vector<N, T>> : std::true_type {};
 	}
 
-	template <typename _Ty>
-	struct Is_Vector : std::false_type {};
-
-	template<int N, class T>
-	struct Is_Vector<Vector<N, T>> : std::true_type {};
 }
 
 template <int N, class T, class Q>
-constexpr inline math::Vector<N, T> operator*(Q const& q, math::Vector<N, T> const& vec) noexcept
+constexpr inline that::math::Vector<N, T> operator*(Q const& q, that::math::Vector<N, T> const& vec) noexcept
 {
 	return vec * q;
 }
 
 template <int N, class T, class Q>
-constexpr inline math::Vector<N, T> operator/(Q const& q, math::Vector<N, T> const& vec) noexcept
+constexpr inline that::math::Vector<N, T> operator/(Q const& q, that::math::Vector<N, T> const& vec) noexcept
 {
-	math::Vector<N, T> left = q;
+	that::math::Vector<N, T> left = q;
 	return left / vec;
 }
 
 namespace std
 {
 	template <int N, class T>
-	struct is_trivially_copyable < math::Vector < N, T >> : public is_trivially_copyable<T>::type {};
+	struct is_trivially_copyable < that::math::Vector < N, T >> : public is_trivially_copyable<T>::type {};
 }
 
 template <class Stream, int N, class T>
-Stream& operator<<(Stream& stream, math::Vector<N, T> const& vec) 
+Stream& operator<<(Stream& stream, that::math::Vector<N, T> const& vec) 
 {
 	stream << "(";
 	for (int i = 0; i < vec.size(); ++i)
