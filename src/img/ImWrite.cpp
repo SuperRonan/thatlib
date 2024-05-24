@@ -223,7 +223,8 @@ namespace that
 							stbi_res = stbi_write_hdr_to_func(writeFileCallback, &context, img.width(), img.height(), comp, reinterpret_cast<const float*>(img.rawData()));
 						}
 					}
-					if(stbi_res != 0)	context.result = false;
+					// stbi write returns 0 on failure, not 0 on success (stupid, int res should be an error code)
+					if(stbi_res == 0)	context.result = false;
 					if (context.result)
 					{
 						file.flush();
