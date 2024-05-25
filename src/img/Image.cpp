@@ -430,8 +430,9 @@ namespace that
 
 
 			// dst can be src
-			static bool ConvertFormat(ConvertParams const& params) {
-				bool res = false;
+			static Result ConvertFormat(ConvertParams const& params) {
+
+				Result result = Result::Success;
 			
 				using byte = uint8_t;
 
@@ -501,7 +502,7 @@ namespace that
 							std::memset(dst_pixel + src_pixel_size, 0, dst_pixel_size - src_pixel_size);
 						};
 						ProcessPerPixel(params, f);
-						res = true;
+						result = Result::Success;
 					}
 					else if(narrowing)
 					{
@@ -510,7 +511,7 @@ namespace that
 							std::memcpy(dst_pixel, src_pixel, dst_pixel_size);
 						};
 						ProcessPerPixel(params, f);
-						res = true;
+						result = Result::Success;
 					}
 					else
 					{
@@ -519,7 +520,7 @@ namespace that
 							if (same_major)
 							{
 								std::memcpy(params.dst, params.src, params.w * params.h * params.src_format.pixelSize());
-								res = true;
+								result = Result::Success;
 							}
 							else
 							{
@@ -528,19 +529,19 @@ namespace that
 									std::memcpy(dst, src, src_pixel_size);
 								};
 								ProcessPerPixel(params, f);
-								res = true;
+								result = Result::Success;
 							}
 						}
 						else
 						{
 							if (same_major)
 							{
-								res = true;
+								result = Result::Success;
 							}
 							else
 							{
 								// A simple transpose();
-								res = false;
+								result = Result::NotImplemented;
 
 							}
 						}
@@ -548,12 +549,64 @@ namespace that
 				}
 				else if (require_conversion)
 				{
-					res = ConvertFormatDispatch1(params);
+					const bool converted = ConvertFormatDispatch1(params);
+					if (!converted)
+					{
+						result = Result::CannotConvertFormat;
+					}
 				}
 
-				return res;
+				return result;
 			}
 		};
+
+		Result FormatlessImage::convertFormat(FormatInfo const& src_format, bool src_row_major, FormatInfo const& dst_format, bool dst_row_major)
+		{
+			Result result = Result::Success;
+			{
+				const size_t expected_byte_size = size() * src_format.pixelSize();
+				if (expected_byte_size < byteSize())
+				{
+					result = Result::InvalidValue;
+					return result;
+				}
+			}
+			if (dst_format.pixelSize() > src_format.pixelSize())
+			{
+				FormatlessImage old = std::move(*this);
+				*this = FormatlessImage(old.width(), old.height(), dst_format.pixelSize());
+				ImageProcessor::ConvertParams params{
+					.src = old.rawData(),
+					.dst = this->rawData(),
+					.w = width(),
+					.h = height(),
+					.src_format = src_format,
+					.dst_format = dst_format,
+					.src_row_major = src_row_major,
+					.dst_row_major = dst_row_major,
+				};
+				result = ImageProcessor::ConvertFormat(params);
+				if (result != Result::Success)
+				{
+					*this = std::move(old);
+				}
+			}
+			else
+			{
+				ImageProcessor::ConvertParams params{
+					.src = this->rawData(),
+					.dst = this->rawData(),
+					.w = width(),
+					.h = height(),
+					.src_format = src_format,
+					.dst_format = dst_format,
+					.src_row_major = src_row_major,
+					.dst_row_major = dst_row_major,
+				};
+				result = ImageProcessor::ConvertFormat(params);
+			}
+			return result;
+		}
 
 		FormatedImage::FormatedImage(FormatedImage const& img, FormatInfo const& new_format, bool row_major) :
 			FormatedImage(img.width(), img.height(), new_format, row_major)
@@ -567,14 +620,21 @@ namespace that
 			reFormat(new_format, row_major);
 		}
 
+		void FormatedImage::setFormat(FormatInfo const& format, bool new_row_major)
+		{
+			_format = format;
+			_row_major = new_row_major;
+			resize(_w, _h, _format.pixelSize());
+		}
+
 		void FormatedImage::setMajor(bool row_major)
 		{
 			_row_major = row_major;
 		}
 
-		bool FormatedImage::reFormat(FormatInfo const& new_format, bool new_row_major)
+		Result FormatedImage::reFormat(FormatInfo const& new_format, bool new_row_major)
 		{
-			bool res = false;
+			Result result = Result::Success;
 			if (new_format.pixelSize() > _format.pixelSize())
 			{
 				FormatedImage old = std::move(*this);
@@ -589,8 +649,8 @@ namespace that
 					.src_row_major = old.rowMajor(),
 					.dst_row_major = new_row_major,
 				};
-				res = ImageProcessor::ConvertFormat(params);
-				if (!res)
+				result = ImageProcessor::ConvertFormat(params);
+				if (result != Result::Success)
 				{
 					*this = std::move(old);
 				}
@@ -607,19 +667,17 @@ namespace that
 					.src_row_major = _row_major,
 					.dst_row_major = new_row_major,
 				};
-				res = ImageProcessor::ConvertFormat(params);
-				if (res)
+				result = ImageProcessor::ConvertFormat(params);
+				if (result == Result::Success)
 				{
-					_format = new_format;
-					_row_major = new_row_major;
+					setFormat(new_format, new_row_major);
 				}
 			}
-			return res;
+			return result;
 		}
 
-		bool FormatedImage::copyReformat(FormatedImage const& src)
+		Result FormatedImage::copyReformat(FormatedImage const& src)
 		{
-			resize(src.width(), src.height(), src.format().pixelSize());
 			ImageProcessor::ConvertParams params{
 				.src = src.rawData(),
 				.dst = this->rawData(),
@@ -628,7 +686,7 @@ namespace that
 				.src_format = src.format(),
 				.dst_format = _format,
 				.src_row_major = src.rowMajor(),
-				.dst_row_major = _row_major,
+				.dst_row_major = rowMajor(),
 			};
 			return ImageProcessor::ConvertFormat(params);
 		}

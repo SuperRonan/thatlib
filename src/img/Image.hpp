@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional>
 
+#include <core/Result.hpp>
 #include <math/Vector.hpp>
 #include <img/Format.hpp>
 
@@ -95,6 +96,7 @@ namespace that
 			{
 				return _h;
 			}
+
 			constexpr size_t size() const
 			{
 				return _size;
@@ -153,6 +155,8 @@ namespace that
 			}
 
 			void transpose();
+
+			Result convertFormat(FormatInfo const& src_format, bool src_row_major, FormatInfo const& dst_format, bool dst_row_major);
 		};
 
 	
@@ -334,15 +338,22 @@ namespace that
 
 			void setMajor(bool row_major);
 
-			bool reFormat(FormatInfo const& new_format, bool new_row_major);
+			void setFormat(FormatInfo const& format, bool new_row_major);
 			
-			bool reFormat(FormatInfo const& new_format)
+			void setFormat(FormatInfo const& format)
+			{
+				setFormat(format, _row_major);
+			}
+
+			Result reFormat(FormatInfo const& new_format, bool new_row_major);
+			
+			Result reFormat(FormatInfo const& new_format)
 			{
 				return reFormat(new_format, _row_major);
 			}
 
 			// copy src content to this format
-			bool copyReformat(FormatedImage const& src);
+			Result copyReformat(FormatedImage const& src);
 		};
 
 		// It is easier to move on major

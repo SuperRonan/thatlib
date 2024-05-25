@@ -5,10 +5,10 @@
 #include <stb/stb_image_write.h>
 #include <math/Half.hpp>
 
+#include <core/Strings.hpp>
+
 namespace that
 {
-
-
 	namespace img
 	{
 		namespace io
@@ -74,11 +74,11 @@ namespace that
 					*(ptr - 1) = '\n';
 				}
 
-				bool write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+				Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 				{
 					if (!row_major)
 					{
-						return false;
+						return Result::InvalidValue;
 						// TODO
 						//FormatedImage tmp(img.width(), img.height(), format, true);
 					}
@@ -109,7 +109,7 @@ namespace that
 
 					if (info.magic_number < 0)
 					{
-						return false;
+						return Result::InvalidValue;
 					}
 
 					size_t header_size = headerSize(info.magic_number, width, height, max_value);
@@ -124,22 +124,22 @@ namespace that
 				
 					std::memcpy(ptr, img.rawData(), content_size);
 
-					bool res;
+					Result result = Result::Success;
 					try
 					{
-						res = writeFile(file_data.data(), total_size, path);
+						result = writeFile(file_data.data(), total_size, path);
 					}
 					catch (std::exception const& e)
 					{
 						std::wcerr << L"ImWrite PPM, could not write " << path << L" because: " << e.what() << '\n';
-						return false;
+						result = Result::FileWriteException;
 					}
-					return res;
+					return result;
 				}
 
-				bool write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+				Result write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
 				{
-					return write(img, img.format(), img.rowMajor(), path, info);
+					return ::that::img::io::stbi::write(img, img.format(), img.rowMajor(), path, info);
 				}
 			}
 
@@ -148,25 +148,23 @@ namespace that
 				struct WriteContext
 				{
 					std::ofstream & file;
-					bool result;
+					Result result;
 				};
 			
 				void writeFileCallback(void* context, void* data, int len)
 				{
 					WriteContext* _context = (stbi::WriteContext*)context;
-					if (_context->result)
+					if (_context->result == Result::Success)
 					{
 						_context->file.write((const char *)data, static_cast<std::streamsize>(len));
-						_context->result &= _context->file.good();
+						if (!_context->file.good())
+						{
+							_context->result = Result::FileWriteError;
+						}
 					}
 				}
 			
-				bool write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
-				{
-					return write(img, img.format(), img.rowMajor(), path, info);
-				}
-			
-				bool write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+				Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 				{
 					assert(path.has_extension());
 					const std::filesystem::path ext = path.extension();
@@ -176,17 +174,19 @@ namespace that
 					std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);
 					if (!file.is_open() || !file.good())
 					{
-						return false;
+						return Result::FileWriteError;
 					}
 
 					WriteContext context{
 						.file = file,
-						.result = true,
+						.result = Result::Success,
 					};
 
-					int stbi_res = -1;
+					// Hope this code is not used by stbi
+					const int did_not_write = 196;
+					int stbi_res = did_not_write;
 
-					if (ext == ".pnr")
+					if (ext == ".png")
 					{
 						if (format.elem_size == 1)
 						{
@@ -224,13 +224,19 @@ namespace that
 						}
 					}
 					// stbi write returns 0 on failure, not 0 on success (stupid, int res should be an error code)
-					if(stbi_res == 0)	context.result = false;
-					if (context.result)
+					if(stbi_res == did_not_write) context.result = Result::WrongFileFormat;
+					else if(stbi_res == 0)	context.result = Result::STBInteralError;
+					else if (context.result == Result::Success)
 					{
 						file.flush();
 						file.close();
 					}
 					return context.result;
+				}
+
+				Result write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+				{
+					return that::img::io::stbi::write(img, img.format(), img.rowMajor(), path, info);
 				}
 			}
 
@@ -241,15 +247,15 @@ namespace that
 				OPENEXR,
 			};
 
-			bool CheckExtension(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info,
-				std::filesystem::path& path_with_extension, const std::filesystem::path*& write_path, bool & need_format_conversion, FormatInfo & write_format
+			Result CheckExtension(FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
+				std::filesystem::path& path_with_extension, const std::filesystem::path*& write_path, bool & need_format_conversion, FormatInfo & write_format, bool & write_major
 			)
 			{
 				const bool can_exr = false;
 				if (!path.has_extension())
 				{
 					path_with_extension = path;
-					switch (img.format().type)
+					switch (format.type)
 					{
 						case ElementType::UNORM:
 						case ElementType::SNORM:
@@ -262,17 +268,17 @@ namespace that
 						break;
 						case ElementType::FLOAT:
 						{
-							if (img.format().elem_size == sizeof(float))
+							if (format.elem_size == sizeof(float))
 							{
 								path_with_extension += ".hdr";
 							}
-							else if (img.format().elem_size == sizeof(double))
+							else if (format.elem_size == sizeof(double))
 							{
 								path_with_extension += ".hdr";
 								need_format_conversion = true;
 								write_format.elem_size = sizeof(float);
 							}
-							else if (img.format().elem_size == (sizeof(float) / 2)) // float16_t in C++23 or use an external Half type
+							else if (format.elem_size == (sizeof(math::float16_t))) 
 							{
 								if (can_exr)
 								{
@@ -290,86 +296,108 @@ namespace that
 					}
 					write_path = &path_with_extension;
 				}
-				return true;
+				return Result::Success;
 			}
 
-			bool FindFormatConversionIFP(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info,
-				std::filesystem::path& path_with_extension, const std::filesystem::path*& write_path, bool& need_format_conversion, FormatInfo& write_format,
+			Result FindFormatConversionIFP(FormatInfo const& format, bool row_major, std::filesystem::path const& extension, WriteInfo const& info,
+			bool& need_format_conversion, FormatInfo& write_format, bool& write_major,
 				WriterLibrary writer
 			)
 			{
-				bool res = true;
+				Result res = Result::Success;
 				if (!need_format_conversion)
 				{
 					// it might need one
 					if (writer == WriterLibrary::NETPBM)
 					{
-						// TODO
+						res = Result::NotImplemented;
 					}
 					else if (writer == WriterLibrary::STBI)
 					{
-						if (img.rowMajor() == false)
+						if (row_major != IMAGE_ROW_MAJOR)
 						{
 							need_format_conversion = true;
+							write_major = IMAGE_ROW_MAJOR;
 						}
-						switch (img.format().type)
+						switch (format.type)
 						{
-						case ElementType::UNORM:
-						case ElementType::SNORM:
-						case ElementType::UINT:
-						case ElementType::SINT:
-						case ElementType::sRGB:
-						{
-							if (img.format().elem_size != 1)
+							case ElementType::UNORM:
+							case ElementType::SNORM:
+							case ElementType::UINT:
+							case ElementType::SINT:
+							case ElementType::sRGB:
 							{
-								need_format_conversion = true;
-								write_format.elem_size = 1;
+								if (extension == ".hdr")
+								{
+									need_format_conversion = true;
+									write_format.elem_size = sizeof(float);
+									write_format.type = ElementType::FLOAT;
+								}
+								else
+								{
+									if (format.elem_size != 1)
+									{
+										need_format_conversion = true;
+										write_format.elem_size = 1;
+									}
+								}
 							}
-						}
-						break;
-						case ElementType::FLOAT:
-						{
-							// stbi .hdr can only write float
-							if (img.format().elem_size != sizeof(float))
+							break;
+							case ElementType::FLOAT:
 							{
-								need_format_conversion = true;
-								write_format.elem_size = sizeof(float);
+								if (extension == ".hdr")
+								{
+									// stbi .hdr can only write float
+									if (format.elem_size != sizeof(float))
+									{
+										need_format_conversion = true;
+										write_format.elem_size = sizeof(float);
+									}
+								}
+								else
+								{
+									write_format.elem_size = 1;
+									write_format.type = ElementType::UNORM;
+									need_format_conversion = true;
+								}
 							}
-						}
 						}
 					}
 					else if (writer == WriterLibrary::OPENEXR)
 					{
 						// openEXR can write float or half
-						if (img.format().elem_size == sizeof(double))
+						if (format.elem_size == sizeof(double) || format.type != ElementType::FLOAT)
 						{
 							need_format_conversion = true;
 							write_format.elem_size = sizeof(float);
+							write_format.type = ElementType::FLOAT;
 						}
+						res = Result::NotImplemented;
 					}
 				}
 				return res;
 			}
 
-			bool CheckWrite(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info,
-				std::filesystem::path& path_with_extension, const std::filesystem::path*& write_path, bool& need_format_conversion, FormatInfo& write_format,
+			Result CheckWrite(FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
+				std::filesystem::path& path_with_extension, const std::filesystem::path*& write_path, bool& need_format_conversion, FormatInfo& write_format, bool& write_major,
 				WriterLibrary& writer)
 			{
-				bool res = false;
+				Result res = Result::Success;
 				const bool can_exr = false;
-				res = CheckExtension(img, path, info, path_with_extension, write_path, need_format_conversion, write_format);
+				res = CheckExtension(format, row_major, path, info, path_with_extension, write_path, need_format_conversion, write_format, write_major);
 				
-				if (!res)
+				if (res != Result::Success)
 				{
 					return res;
 				}
 
 				if (!write_path->has_extension())
 				{
-					return false;
+					return Result::InvalidValue;
 				}
 
-				const std::filesystem::path ext = write_path->extension();
+				const std::filesystem::path ext_path = write_path->extension();
+				std::path_string_view ext = extractExtensionSV(&ext_path);
 				if (netpbm::isNetpbm(ext))
 				{
 					writer = WriterLibrary::NETPBM;
@@ -383,30 +411,34 @@ namespace that
 					writer = WriterLibrary::OPENEXR;
 				}
 
-				res = FindFormatConversionIFP(img, path, info, path_with_extension, write_path, need_format_conversion, write_format, writer);
+				res = FindFormatConversionIFP(format, row_major, ext_path, info, need_format_conversion, write_format, write_major, writer);
 
 				return res;
 			}
 
-			bool write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+			
+			Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
+				std::function<Result(FormatInfo const& write_format, bool write_major, const FormatlessImage *& target)> convert_format_f
+			)
 			{
-				bool res = false;
+				Result res = Result::Success;
 				if (img.empty() || path.empty())
 				{
-					return false;
+					return Result::InvalidValue;
 				}
-				const FormatedImage * target = &img;
+				const FormatlessImage * target = &img;
 
 				const std::filesystem::path * write_path = &path;
 				std::filesystem::path path_with_extension;
 
 				bool need_format_conversion = false;
-				FormatInfo write_format = img.format();
+				FormatInfo write_format = format;
+				bool write_major = row_major;
 				WriterLibrary writer;
 
-				res = CheckWrite(img, path, info, path_with_extension, write_path, need_format_conversion, write_format, writer);
+				res = CheckWrite(format, row_major, path, info, path_with_extension, write_path, need_format_conversion, write_format, write_major, writer);
 
-				if (!res)
+				if (res != Result::Success)
 				{
 					return res;
 				}
@@ -414,79 +446,124 @@ namespace that
 				FormatedImage write_img;
 				if (need_format_conversion)
 				{
-					write_img = FormatedImage(img.width(), img.height(), write_format);
-					write_img.copyReformat(img);
-					target = &write_img;
+					res = convert_format_f(write_format, write_major, target);
+					if (res != Result::Success)
+					{
+						return res;
+					}
 				}
 
 				if (writer == WriterLibrary::NETPBM)
 				{
-					res = netpbm::write(*target, *write_path, info);
+					res = netpbm::write(*target, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::STBI)
 				{
-					res = stbi::write(*target, *write_path, info);
+					res = stbi::write(*target, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::OPENEXR)
 				{
-					// TODO
+					res = Result::NotImplemented;
 				}
 				return res;
 			}
 
-			bool write(FormatedImage&& img, std::filesystem::path const& path, WriteInfo const& info)
+			Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 			{
-				bool res = false;
+				FormatlessImage reformated;
+				return write(img, format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major, const FormatlessImage* target) -> Result
+				{
+					reformated = FormatlessImage(img.width(), img.height(), write_format.pixelSize());
+					target = &reformated;
+					Result result = reformated.convertFormat(format, row_major, write_format, write_major);
+					return result;
+				});
+			}
+
+			Result write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+			{
+				return write(img, img.format(), img.rowMajor(), path, info);
+			}
+
+			Result write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
+				std::function<Result(FormatInfo const& write_format, bool write_major)> convert_format_f
+			)
+			{
+				Result res = Result::Success;
 				if (img.empty() || path.empty())
 				{
-					return false;
+					return Result::InvalidValue;
 				}
 
 				const std::filesystem::path* write_path = &path;
 				std::filesystem::path path_with_extension;
 
 				bool need_format_conversion = false;
-				FormatInfo write_format = img.format();
+				FormatInfo write_format = format;
+				bool write_major = row_major;
 				WriterLibrary writer;
 
-				res = CheckWrite(img, path, info, path_with_extension, write_path, need_format_conversion, write_format, writer);
+				res = CheckWrite(format, row_major, path, info, path_with_extension, write_path, need_format_conversion, write_format, write_major, writer);
 
-				if (!res)
+				if (res != Result::Success)
 				{
 					return res;
 				}
 
-				FormatedImage write_img;
 				if (need_format_conversion)
 				{
-					img.reFormat(write_format);
+					res = convert_format_f(write_format, write_major);
+					if (res != Result::Success)
+					{
+						return res;
+					}
 				}
 
 				if (writer == WriterLibrary::NETPBM)
 				{
-					res = netpbm::write(img, *write_path, info);
+					res = netpbm::write(img, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::STBI)
 				{
-					res = stbi::write(img, *write_path, info);
+					res = stbi::write(img, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::OPENEXR)
 				{
-					// TODO
+					res = Result::NotImplemented;
 				}
 				return res;
 			}
 
-			bool writeFile(byte* data, size_t size, std::filesystem::path const& path)
+			Result write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 			{
-				bool res = false;
+				return write(std::move(img), format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major)
+				{
+					return img.convertFormat(format, row_major, write_format, write_major);
+				});
+			}
+
+			Result write(FormatedImage&& img, std::filesystem::path const& path, WriteInfo const& info)
+			{
+				return write(std::move(img), img.format(), img.rowMajor(), path, info, [&](FormatInfo const& write_format, bool write_major)
+				{
+					return img.reFormat(write_format, write_major);
+				});
+			}
+
+			Result writeFile(byte* data, size_t size, std::filesystem::path const& path)
+			{
+				Result res = Result::Success;
 				std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);
 				if (file.good() && file.is_open())
 				{
 					file.write((const char*)data, size);
 					file.flush();
 					file.close();
-					res = true;
+					res = Result::Success;
+				}
+				else
+				{
+					res = Result::FileWriteError;
 				}
 				return res;
 			}

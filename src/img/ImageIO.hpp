@@ -15,6 +15,7 @@
 #include "Color.hpp"
 #include "../math/Vector.hpp"
 
+#include <core/Strings.hpp>
 
 namespace that
 {
@@ -27,19 +28,15 @@ namespace that
 		
 			namespace netpbm
 			{
-				__forceinline bool isNetpbm(std::wstring const& ext)
-				{
-					return ext == L".ppm" || ext == L".pgm" || ext == L".pbm";
-				}
+				extern bool isNetpbm(std::string_view const& ext);
+				extern bool isNetpbm(std::wstring_view const& ext);
 
 			}
 
 			namespace stbi
 			{
-				__forceinline bool canReadWrite(std::wstring const& ext)
-				{
-					return ext == L".png" || ext == L".jpg" || ext == L".jpeg" || ext == L".tga" || ext == L".hdr";
-				}
+				extern bool canReadWrite(std::string_view const& ext);
+				extern bool canReadWrite(std::wstring_view const& ext);
 			}
 
 			using RGBu = RGB<unsigned char>;
@@ -69,14 +66,9 @@ namespace that
 				return T(1);
 			}
 
-			inline std::string convertWString(std::wstring const& wstr)
-			{
-				std::string res;
-				res.resize(wstr.size());
-				std::transform(wstr.begin(), wstr.end(), res.begin(), [](wchar_t wc) {return static_cast<char>(wc); });
-				return res;
-				//return std::string(wstr.begin(), wstr.end());
-			}
+			extern std::string convertWString(std::wstring_view const& wstr);
+
+			extern std::path_string_view extractExtensionSV(const std::filesystem::path* ext_path);
 		}
 }
 

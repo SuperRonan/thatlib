@@ -9,14 +9,14 @@
 namespace that
 {
 	template <std::floating_point DstFloat, std::floating_point SrcFloat>
-	static constexpr DstFloat ConvertFloatToFloat(SrcFloat src)
+	constexpr DstFloat ConvertFloatToFloat(SrcFloat src)
 	{
 		const DstFloat res = static_cast<DstFloat>(src);
 		return res;
 	}
 
 	template <std::floating_point DstFloat, std::integral SrcNorm>
-	static constexpr DstFloat ConvertNormToFloat(SrcNorm n)
+	constexpr DstFloat ConvertNormToFloat(SrcNorm n)
 	{
 		const SrcNorm max = std::numeric_limits<SrcNorm>::max();
 		// As defined by the glsl spec: https://registry.khronos.org/OpenGL-Refpages/gl4/html/unpackUnorm.xhtml
@@ -35,7 +35,7 @@ namespace that
 	}
 
 	template <std::integral DstNorm, std::floating_point SrcFloat>
-	static constexpr DstNorm ConvertFloatToNorm(SrcFloat f)
+	constexpr DstNorm ConvertFloatToNorm(SrcFloat f)
 	{
 		double d = static_cast<double>(f);
 		const DstNorm max = std::numeric_limits<DstNorm>::max();
@@ -53,7 +53,7 @@ namespace that
 	}
 
 	template <std::unsigned_integral Target, std::unsigned_integral Uint>
-	static constexpr Target DuplicateBitsLeft(Uint u)
+	constexpr Target DuplicateBitsLeft(Uint u)
 	{
 		if constexpr (sizeof(Target) == sizeof(Uint))
 		{
@@ -70,7 +70,7 @@ namespace that
 
 	// SNORM -> UNORM: negatives are clamped to 0
 	template <std::integral DstNorm, std::integral SrcNorm>
-	static constexpr DstNorm ConvertNormToNorm(SrcNorm n)
+	constexpr DstNorm ConvertNormToNorm(SrcNorm n)
 	{
 		DstNorm res;
 		constexpr const bool src_is_uint = std::is_unsigned<SrcNorm>::value;
@@ -162,7 +162,7 @@ namespace that
 	}
 
 	template <std::floating_point DstFloat, std::unsigned_integral sRGB>
-	static constexpr DstFloat ConvertsRGBToFloat(sRGB s)
+	constexpr DstFloat ConvertsRGBToFloat(sRGB s)
 	{
 		using ComputeFloat = typename FloatTypePerSize<std::max<size_t>(4, sizeof(DstFloat))>::type;
 		ComputeFloat res = ConvertNormToFloat<ComputeFloat>(s);
@@ -171,7 +171,7 @@ namespace that
 	}
 
 	template <std::unsigned_integral sRGB, std::floating_point SrcFloat>
-	static constexpr sRGB ConvertFloatTosRGB(SrcFloat f)
+	constexpr sRGB ConvertFloatTosRGB(SrcFloat f)
 	{
 		using ComputeFloat = typename FloatTypePerSize<std::max<size_t>(4, sizeof(SrcFloat))>::type;
 		ComputeFloat d = std::clamp<ComputeFloat>(f, 0, 1);
@@ -181,21 +181,21 @@ namespace that
 	}
 
 	template <std::integral DstNorm, std::unsigned_integral sRGB>
-	static constexpr DstNorm ConvertsRGBToNorm(sRGB s)
+	constexpr DstNorm ConvertsRGBToNorm(sRGB s)
 	{
 		double d = ConvertsRGBToFloat<double>(s);
 		return ConvertFloatToNorm<DstNorm>(d);
 	}
 
 	template <std::unsigned_integral sRGB, std::integral SrcNorm>
-	static constexpr sRGB ConvertNormTosRGB(SrcNorm n)
+	constexpr sRGB ConvertNormTosRGB(SrcNorm n)
 	{
 		double d = ConvertNormToFloat<double>(n);
 		return ConvertFloatTosRGB<sRGB>(d);
 	}
 
 	template <std::unsigned_integral Dst, std::unsigned_integral Src>
-	static constexpr Dst ConvertsRGBTosRGB(Src s)
+	constexpr Dst ConvertsRGBTosRGB(Src s)
 	{
 		if constexpr (sizeof(Src) == sizeof(Dst))
 		{
@@ -210,19 +210,19 @@ namespace that
 	}
 
 	template <std::integral DstInt, std::floating_point SrcFloat>
-	static constexpr DstInt ConvertFloatToInt(SrcFloat f)
+	constexpr DstInt ConvertFloatToInt(SrcFloat f)
 	{
 		return static_cast<DstInt>(f);
 	}
 
 	template <std::floating_point DstFloat, std::integral SrcInt>
-	static constexpr DstFloat ConvertIntToFloat(SrcInt i)
+	constexpr DstFloat ConvertIntToFloat(SrcInt i)
 	{
 		return static_cast<DstFloat>(i);
 	}
 
 	template <ElementType src_type, uint32_t src_size, ElementType dst_type, uint32_t dst_size>
-	static auto GetConvertPixelChannelFunction()
+	auto GetConvertPixelChannelFunction()
 	{
 		using SrcType = typename UnderlyingPixelType<src_type, src_size>::type;
 		using DstType = typename UnderlyingPixelType<dst_type, dst_size>::type;

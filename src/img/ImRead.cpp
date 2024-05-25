@@ -38,6 +38,53 @@ namespace that
 
 			namespace netpbm
 			{
+				__forceinline void eat_white(pbyte& ptr, const pbyte end)
+				{
+					for (; ptr != end; ++ptr)
+					{
+						if (*ptr != '\n' && *ptr != '\r' && *ptr != '\t' && *ptr != ' ')
+							break;
+					}
+				}
+
+				__forceinline void eat_line(pbyte& ptr, const pbyte end)
+				{
+					for (; ptr != end; ++ptr)
+					{
+						if (*ptr == '\n')
+							break;
+					}
+					ptr++;
+				}
+
+				__forceinline void eat_token(pbyte& ptr, const pbyte end)
+				{
+					for (; ptr != end; ++ptr)
+					{
+						if (*ptr == '\n' || *ptr == '\r' || *ptr == '\t' || *ptr == ' ')
+							break;
+					}
+				}
+
+				__forceinline int eat_int(pbyte& ptr, const pbyte end)
+				{
+					eat_white(ptr, end);
+					int v = atoi((char*)ptr);
+					eat_token(ptr, end);
+					return v;
+				}
+
+				__forceinline void eat_comment(pbyte& ptr, const pbyte end)
+				{
+					while (ptr != end)
+					{
+						eat_white(ptr, end);
+						if (*ptr != '#')
+							break;
+						eat_line(ptr, end);
+					}
+				}
+
 				FormatedImage readFormatedImage(const std::filesystem::path& path)
 				{
 					std::vector<byte> file;
@@ -174,7 +221,8 @@ namespace that
 			{
 				if (path.has_extension())
 				{
-					const std::filesystem::path ext = path.extension();
+					const std::filesystem::path ext_path = path.extension();
+					std::path_string_view ext = extractExtensionSV(&ext_path);
 					if (netpbm::isNetpbm(ext))
 					{
 						return netpbm::readFormatedImage(path);
@@ -185,7 +233,7 @@ namespace that
 					}
 					else
 					{
-						std::cerr << "ImRead: unknown extention \"" << ext << "\" of " << path << '\n';
+						std::cerr << "ImRead: unknown extention \"" << ext_path << "\" of " << path << '\n';
 					}
 				}
 				else

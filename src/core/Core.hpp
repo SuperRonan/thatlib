@@ -5,7 +5,7 @@
 namespace that
 {
 	template <bool value>
-	constexpr static void StaticAssert()
+	constexpr void StaticAssert()
 	{
 		static_assert(value);
 	}

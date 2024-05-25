@@ -30,180 +30,133 @@ namespace that
 					}
 				};
 
-				__forceinline void eat_white(pbyte& ptr, const pbyte end)
-				{
-					for (; ptr != end; ++ptr)
-					{
-						if (*ptr != '\n' && *ptr != '\r' && *ptr != '\t' && *ptr != ' ')
-							break;
-					}
-				}
-
-				__forceinline void eat_line(pbyte& ptr, const pbyte end)
-				{
-					for (; ptr != end; ++ptr)
-					{
-						if (*ptr == '\n')
-							break;
-					}
-					ptr++;
-				}
-
-				__forceinline void eat_token(pbyte& ptr, const pbyte end)
-				{
-					for (; ptr != end; ++ptr)
-					{
-						if (*ptr == '\n' || *ptr == '\r' || *ptr == '\t' || *ptr == ' ')
-							break;
-					}
-				}
-
-				__forceinline int eat_int(pbyte& ptr, const pbyte end)
-				{
-					eat_white(ptr, end);
-					int v = atoi((char*)ptr);
-					eat_token(ptr, end);
-					return v;
-				}
-
-				__forceinline void eat_comment(pbyte& ptr, const pbyte end)
-				{
-					while (ptr != end)
-					{
-						eat_white(ptr, end);
-						if (*ptr != '#')
-							break;
-						eat_line(ptr, end);
-					}
-				}
-
 				FormatedImage readFormatedImage(const std::filesystem::path& path);
 
-				template <class T, bool RM = IMAGE_ROW_MAJOR>
-				Image<T, RM> read(const wchar_t* name, T T_max)
-				{
-					if constexpr (RM == IMAGE_COL_MAJOR)
-					{
-						return read<T, !RM>(name, T_max);
-					}
-					using RGBu = RGB<unsigned char>;
-					using RGBd = RGB<unsigned char>;
-					Image<T, RM> res;
-					std::vector<byte> file;
-					std::string error;
-					try
-					{
-						file = load_file(name);
-					}
-					catch (std::exception const& e)
-					{
-						error = e.what();
-					}
+				//template <class T, bool RM = IMAGE_ROW_MAJOR>
+				//Image<T, RM> read(const wchar_t* name, T T_max)
+				//{
+				//	if constexpr (RM == IMAGE_COL_MAJOR)
+				//	{
+				//		return read<T, !RM>(name, T_max);
+				//	}
+				//	using RGBu = RGB<unsigned char>;
+				//	using RGBd = RGB<unsigned char>;
+				//	Image<T, RM> res;
+				//	std::vector<byte> file;
+				//	std::string error;
+				//	try
+				//	{
+				//		file = load_file(name);
+				//	}
+				//	catch (std::exception const& e)
+				//	{
+				//		error = e.what();
+				//	}
 
-					if (error.empty())
-					{
-						Header header;
-						pbyte ptr = file.data();
-						const pbyte end = ptr + file.size();
+				//	if (error.empty())
+				//	{
+				//		Header header;
+				//		pbyte ptr = file.data();
+				//		const pbyte end = ptr + file.size();
 
-						try
-						{
-							eat_comment(ptr, end);
-							eat_white(ptr, end);
-							int mode = 0;
-							if (ptr + 2 < end && ptr[0] == 'P')
-							{
-								mode = ptr[1] - '0';
-								ptr += 2;
-							}
+				//		try
+				//		{
+				//			eat_comment(ptr, end);
+				//			eat_white(ptr, end);
+				//			int mode = 0;
+				//			if (ptr + 2 < end && ptr[0] == 'P')
+				//			{
+				//				mode = ptr[1] - '0';
+				//				ptr += 2;
+				//			}
 
-							// get w
-							eat_comment(ptr, end);
-							header.width = eat_int(ptr, end);
+				//			// get w
+				//			eat_comment(ptr, end);
+				//			header.width = eat_int(ptr, end);
 
-							// get h
-							eat_comment(ptr, end);
-							header.height = eat_int(ptr, end);
+				//			// get h
+				//			eat_comment(ptr, end);
+				//			header.height = eat_int(ptr, end);
 
-							double max_value;
-							if ((mode == 1 || mode == 4))
-							{
-								max_value = 1;
-							}
-							else
-							{
-								eat_comment(ptr, end);
-								header.max_value = eat_int(ptr, end);
-								max_value = header.max_value;
-							}
+				//			double max_value;
+				//			if ((mode == 1 || mode == 4))
+				//			{
+				//				max_value = 1;
+				//			}
+				//			else
+				//			{
+				//				eat_comment(ptr, end);
+				//				header.max_value = eat_int(ptr, end);
+				//				max_value = header.max_value;
+				//			}
 
-							res = Image<T, RM>(header.width, header.height);
-							eat_comment(ptr, end);
-							if (mode == 6)
-							{
-								Image<RGBu, IMAGE_ROW_MAJOR> tmp(res.width(), res.height());
-								assert((end - ptr) >= tmp.byteSize());
-								std::memcpy(tmp.begin(), ptr, tmp.byteSize());
-								if constexpr (std::is_convertible<RGBu, T>::value)
-								{
-									res = tmp;
-								}
-								else
-								{
-									std::cout << "Cannot convert image format" << std::endl;
-								}
-							}
-							else if (mode == 3)
-							{
-								for (int i = 0; i < res.size(); i++)
-								{
-									RGBd ppm_pixel;
-									ppm_pixel[0] = eat_int(ptr, end);
-									ppm_pixel[1] = eat_int(ptr, end);
-									ppm_pixel[2] = eat_int(ptr, end);
-									eat_comment(ptr, end);
-									T t;
-									if constexpr (math::Is_Vector<T>::value)
-										t = (ppm_pixel / max_value) * T_max;
-									else
-										t = (ppm_pixel[0] / max_value) * T_max;
-									res[i] = t;
-								}
-							}
-							else if (mode == 2 || mode == 1)
-							{
-								for (int i = 0; i < res.size(); i++)
-								{
-									double ppm_pixel;
-									ppm_pixel = eat_int(ptr, end);
-									eat_comment(ptr, end);
-									T t = (ppm_pixel / max_value) * T_max;
-									res[i] = t;
-								}
-							}
-							else if (mode == 5)
-							{
-								Image<byte, true> tmp(res.width(), res.height());
-								std::copy(ptr, end, tmp.begin());
-								res = std::move(tmp);
-							}
-							else
-							{
-								throw std::runtime_error("Unsupported magic number");
-							}
-						}
-						catch (std::exception const& e)
-						{
-							error = e.what();
-						}
-					}
+				//			res = Image<T, RM>(header.width, header.height);
+				//			eat_comment(ptr, end);
+				//			if (mode == 6)
+				//			{
+				//				Image<RGBu, IMAGE_ROW_MAJOR> tmp(res.width(), res.height());
+				//				assert((end - ptr) >= tmp.byteSize());
+				//				std::memcpy(tmp.begin(), ptr, tmp.byteSize());
+				//				if constexpr (std::is_convertible<RGBu, T>::value)
+				//				{
+				//					res = tmp;
+				//				}
+				//				else
+				//				{
+				//					std::cout << "Cannot convert image format" << std::endl;
+				//				}
+				//			}
+				//			else if (mode == 3)
+				//			{
+				//				for (int i = 0; i < res.size(); i++)
+				//				{
+				//					RGBd ppm_pixel;
+				//					ppm_pixel[0] = eat_int(ptr, end);
+				//					ppm_pixel[1] = eat_int(ptr, end);
+				//					ppm_pixel[2] = eat_int(ptr, end);
+				//					eat_comment(ptr, end);
+				//					T t;
+				//					if constexpr (math::Is_Vector<T>::value)
+				//						t = (ppm_pixel / max_value) * T_max;
+				//					else
+				//						t = (ppm_pixel[0] / max_value) * T_max;
+				//					res[i] = t;
+				//				}
+				//			}
+				//			else if (mode == 2 || mode == 1)
+				//			{
+				//				for (int i = 0; i < res.size(); i++)
+				//				{
+				//					double ppm_pixel;
+				//					ppm_pixel = eat_int(ptr, end);
+				//					eat_comment(ptr, end);
+				//					T t = (ppm_pixel / max_value) * T_max;
+				//					res[i] = t;
+				//				}
+				//			}
+				//			else if (mode == 5)
+				//			{
+				//				Image<byte, true> tmp(res.width(), res.height());
+				//				std::copy(ptr, end, tmp.begin());
+				//				res = std::move(tmp);
+				//			}
+				//			else
+				//			{
+				//				throw std::runtime_error("Unsupported magic number");
+				//			}
+				//		}
+				//		catch (std::exception const& e)
+				//		{
+				//			error = e.what();
+				//		}
+				//	}
 
-					if (!error.empty())
-					{
-						std::cerr << "Read PPM of " << (const char*)name << ": " << error << std::endl;
-					}
-					return res;
-				}
+				//	if (!error.empty())
+				//	{
+				//		std::cerr << "Read PPM of " << (const char*)name << ": " << error << std::endl;
+				//	}
+				//	return res;
+				//}
 
 			
 			}
@@ -287,31 +240,31 @@ namespace that
 		
 			FormatedImage readFormatedImage(std::filesystem::path const& path);
 
-			template <class T, bool RM = true>
-			Image<T, RM> read(std::filesystem::path const& path)
-			{
-				if (path.has_extension())
-				{
-					std::filesystem::path ext = path.extension();
-					if (netpbm::isNetpbm(ext))
-					{
-						return netpbm::read<T, RM>(path.c_str(), TypeMax<T>());
-					}
-					else if (stbi::canReadWrite(ext))
-					{
-						return stbi::read<T, RM>(path.c_str());
-					}
-					else
-					{
-						std::cerr << "ImRead: unknown extention \"" << ext << "\" of " << path << '\n';
-					}
-				}
-				else
-				{
-					std::cerr << "ImRead: file " << path << " has no extension, could not read it!\n";
-				}
-				return Image<T, RM>();
-			}
+			//template <class T, bool RM = true>
+			//Image<T, RM> read(std::filesystem::path const& path)
+			//{
+			//	if (path.has_extension())
+			//	{
+			//		std::filesystem::path ext = path.extension();
+			//		if (netpbm::isNetpbm(ext))
+			//		{
+			//			return netpbm::read<T, RM>(path.c_str(), TypeMax<T>());
+			//		}
+			//		else if (stbi::canReadWrite(ext))
+			//		{
+			//			return stbi::read<T, RM>(path.c_str());
+			//		}
+			//		else
+			//		{
+			//			std::cerr << "ImRead: unknown extention \"" << ext << "\" of " << path << '\n';
+			//		}
+			//	}
+			//	else
+			//	{
+			//		std::cerr << "ImRead: file " << path << " has no extension, could not read it!\n";
+			//	}
+			//	return Image<T, RM>();
+			//}
 
 		}
 	}
