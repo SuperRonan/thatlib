@@ -74,7 +74,7 @@ namespace that
 					*(ptr - 1) = '\n';
 				}
 
-				Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+				Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 				{
 					if (!row_major)
 					{
@@ -127,7 +127,15 @@ namespace that
 					Result result = Result::Success;
 					try
 					{
-						result = writeFile(file_data.data(), total_size, path);
+						if (info.create_folder_ifn)
+						{
+							result = that::io::CreateDirectoryIFN(path);
+							if (result != Result::Success)
+							{
+								return result;
+							}
+						}
+						result = WriteFile(file_data.data(), total_size, path);
 					}
 					catch (std::exception const& e)
 					{
@@ -137,9 +145,9 @@ namespace that
 					return result;
 				}
 
-				Result write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+				Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
 				{
-					return ::that::img::io::stbi::write(img, img.format(), img.rowMajor(), path, info);
+					return ::that::img::io::stbi::Write(img, img.format(), img.rowMajor(), path, info);
 				}
 			}
 
@@ -164,17 +172,26 @@ namespace that
 					}
 				}
 			
-				Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+				Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 				{
+					Result result = Result::Success;
 					assert(path.has_extension());
 					const std::filesystem::path ext = path.extension();
 
-					int comp = format.channels;
-				
+					if (info.create_folder_ifn)
+					{
+						result = that::io::CreateDirectoryIFN(path);
+						if (result != Result::Success)
+						{
+							return result;
+						}
+					}
+
 					std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);
 					if (!file.is_open() || !file.good())
 					{
-						return Result::FileWriteError;
+						result = Result::FileWriteError;
+						return result;
 					}
 
 					WriteContext context{
@@ -186,6 +203,7 @@ namespace that
 					const int did_not_write = 196;
 					int stbi_res = did_not_write;
 
+					int comp = format.channels;
 					if (ext == ".png")
 					{
 						if (format.elem_size == 1)
@@ -231,12 +249,13 @@ namespace that
 						file.flush();
 						file.close();
 					}
-					return context.result;
+					result = context.result;
+					return result;
 				}
 
-				Result write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+				Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
 				{
-					return that::img::io::stbi::write(img, img.format(), img.rowMajor(), path, info);
+					return that::img::io::stbi::Write(img, img.format(), img.rowMajor(), path, info);
 				}
 			}
 
@@ -397,12 +416,12 @@ namespace that
 				}
 
 				const std::filesystem::path ext_path = write_path->extension();
-				std::path_string_view ext = extractExtensionSV(&ext_path);
-				if (netpbm::isNetpbm(ext))
+				std::path_string_view ext = ExtractExtensionSV(&ext_path);
+				if (netpbm::IsNetpbm(ext))
 				{
 					writer = WriterLibrary::NETPBM;
 				}
-				else if (stbi::canReadWrite(ext))
+				else if (stbi::CanReadWrite(ext))
 				{
 					writer = WriterLibrary::STBI;
 				}
@@ -417,7 +436,7 @@ namespace that
 			}
 
 			
-			Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
+			Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
 				std::function<Result(FormatInfo const& write_format, bool write_major, const FormatlessImage *& target)> convert_format_f
 			)
 			{
@@ -455,11 +474,11 @@ namespace that
 
 				if (writer == WriterLibrary::NETPBM)
 				{
-					res = netpbm::write(*target, write_format, write_major, *write_path, info);
+					res = netpbm::Write(*target, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::STBI)
 				{
-					res = stbi::write(*target, write_format, write_major, *write_path, info);
+					res = stbi::Write(*target, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::OPENEXR)
 				{
@@ -468,10 +487,10 @@ namespace that
 				return res;
 			}
 
-			Result write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+			Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 			{
 				FormatlessImage reformated;
-				return write(img, format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major, const FormatlessImage* target) -> Result
+				return Write(img, format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major, const FormatlessImage* target) -> Result
 				{
 					reformated = FormatlessImage(img.width(), img.height(), write_format.pixelSize());
 					target = &reformated;
@@ -480,12 +499,12 @@ namespace that
 				});
 			}
 
-			Result write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+			Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
 			{
-				return write(img, img.format(), img.rowMajor(), path, info);
+				return Write(img, img.format(), img.rowMajor(), path, info);
 			}
 
-			Result write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
+			Result Write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
 				std::function<Result(FormatInfo const& write_format, bool write_major)> convert_format_f
 			)
 			{
@@ -521,11 +540,11 @@ namespace that
 
 				if (writer == WriterLibrary::NETPBM)
 				{
-					res = netpbm::write(img, write_format, write_major, *write_path, info);
+					res = netpbm::Write(img, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::STBI)
 				{
-					res = stbi::write(img, write_format, write_major, *write_path, info);
+					res = stbi::Write(img, write_format, write_major, *write_path, info);
 				}
 				else if (writer == WriterLibrary::OPENEXR)
 				{
@@ -534,23 +553,23 @@ namespace that
 				return res;
 			}
 
-			Result write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+			Result Write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
 			{
-				return write(std::move(img), format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major)
+				return Write(std::move(img), format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major)
 				{
 					return img.convertFormat(format, row_major, write_format, write_major);
 				});
 			}
 
-			Result write(FormatedImage&& img, std::filesystem::path const& path, WriteInfo const& info)
+			Result Write(FormatedImage&& img, std::filesystem::path const& path, WriteInfo const& info)
 			{
-				return write(std::move(img), img.format(), img.rowMajor(), path, info, [&](FormatInfo const& write_format, bool write_major)
+				return Write(std::move(img), img.format(), img.rowMajor(), path, info, [&](FormatInfo const& write_format, bool write_major)
 				{
 					return img.reFormat(write_format, write_major);
 				});
 			}
 
-			Result writeFile(byte* data, size_t size, std::filesystem::path const& path)
+			Result WriteFile(byte* data, size_t size, std::filesystem::path const& path)
 			{
 				Result res = Result::Success;
 				std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);

@@ -5,12 +5,15 @@
 
 namespace that
 {
-
+	namespace io
+	{
+		extern Result ReadFile(const std::filesystem::path &, std::vector<uint8_t>& buffer);
+	}
 	namespace img
 	{
 		namespace io
 		{
-			std::vector<byte> load_file(const wchar_t* name);
+			
 		
 			namespace netpbm
 			{
@@ -30,7 +33,7 @@ namespace that
 					}
 				};
 
-				FormatedImage readFormatedImage(const std::filesystem::path& path);
+				FormatedImage ReadFormatedImage(const std::filesystem::path& path);
 
 				//template <class T, bool RM = IMAGE_ROW_MAJOR>
 				//Image<T, RM> read(const wchar_t* name, T T_max)
@@ -163,7 +166,7 @@ namespace that
 
 			namespace stbi
 			{
-				FormatedImage readFormatedImage(std::filesystem::path const& path);
+				FormatedImage ReadFormatedImage(std::filesystem::path const& path);
 
 				template <class T, bool RM = IMAGE_ROW_MAJOR>
 				Image<T, RM> read(const wchar_t* path)
@@ -175,7 +178,7 @@ namespace that
 					}
 					int width, height, number_of_channels;
 					byte* data;
-					std::string spath = convertWString(path);
+					std::string spath = ConvertWString(path);
 					try
 					{
 						data = (byte*)stbi_load(spath.c_str(), &width, &height, &number_of_channels, 0);
@@ -238,7 +241,7 @@ namespace that
 				}
 			}
 		
-			FormatedImage readFormatedImage(std::filesystem::path const& path);
+			FormatedImage ReadFormatedImage(std::filesystem::path const& path);
 
 			//template <class T, bool RM = true>
 			//Image<T, RM> read(std::filesystem::path const& path)

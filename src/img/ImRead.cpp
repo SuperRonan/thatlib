@@ -1,41 +1,40 @@
 #include "ImRead.hpp"
 
+#include <fstream>
 #include <cassert>
 
 namespace that
 {
+
+	namespace io
+	{
+		Result ReadFile(std::filesystem::path const& path, std::vector<uint8_t>& buffer)
+		{
+			Result result = Result::Success;
+			const size_t size = std::filesystem::file_size(path);
+			if (size > 0)
+			{
+				std::ifstream file(path, std::ios::binary | std::ios::in);
+				if (file.is_open() && file.good())
+				{
+					buffer.resize(size);
+					file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+					file.close();
+				}
+				else
+				{
+					result = Result::FileReadError;
+				}
+			}
+			return result;
+		}
+	}
 
 
 	namespace img
 	{
 		namespace io
 		{
-			std::vector<byte> load_file(const wchar_t* name)
-			{
-				std::vector<byte> buf;
-				// open
-				FILE* f;
-				_wfopen_s(&f, name, L"rb");
-				if (!f)
-				{
-					throw std::runtime_error(std::string("Could not open file: ") + (const char*)name);
-				}
-
-				// get size
-				fseek(f, 0, SEEK_END);
-				int s = ftell(f);
-				fseek(f, 0, SEEK_SET);
-
-				// read (put space at end for atoi)
-				buf.resize(s + 1);
-				fread((char*)&buf[0], 1, s, f);
-				buf[s] = ' ';
-
-				// close
-				fclose(f);
-				return buf;
-			}
-
 			namespace netpbm
 			{
 				__forceinline void eat_white(pbyte& ptr, const pbyte end)
@@ -85,13 +84,13 @@ namespace that
 					}
 				}
 
-				FormatedImage readFormatedImage(const std::filesystem::path& path)
+				FormatedImage ReadFormatedImage(const std::filesystem::path& path)
 				{
 					std::vector<byte> file;
 					std::string error;
 					try
 					{
-						file = load_file(path.c_str());
+						Result result = that::io::ReadFile(path, file);
 					}
 					catch (std::exception const& e)
 					{
@@ -176,7 +175,7 @@ namespace that
 
 			namespace stbi
 			{
-				FormatedImage readFormatedImage(std::filesystem::path const& path)
+				FormatedImage ReadFormatedImage(std::filesystem::path const& path)
 				{
 					bool row_major = true;
 					FormatInfo format;
@@ -217,19 +216,19 @@ namespace that
 				}
 			}
 
-			FormatedImage readFormatedImage(std::filesystem::path const& path)
+			FormatedImage ReadFormatedImage(std::filesystem::path const& path)
 			{
 				if (path.has_extension())
 				{
 					const std::filesystem::path ext_path = path.extension();
-					std::path_string_view ext = extractExtensionSV(&ext_path);
-					if (netpbm::isNetpbm(ext))
+					std::path_string_view ext = ExtractExtensionSV(&ext_path);
+					if (netpbm::IsNetpbm(ext))
 					{
-						return netpbm::readFormatedImage(path);
+						return netpbm::ReadFormatedImage(path);
 					}
-					else if (stbi::canReadWrite(ext))
+					else if (stbi::CanReadWrite(ext))
 					{
-						return stbi::readFormatedImage(path);
+						return stbi::ReadFormatedImage(path);
 					}
 					else
 					{

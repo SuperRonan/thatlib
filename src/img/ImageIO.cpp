@@ -2,6 +2,65 @@
 
 namespace that
 {
+	namespace io
+	{
+		
+		Result CreateFolderIFNRec(std::filesystem::path const& path)
+		{
+			Result result = Result::Success;
+			if (std::filesystem::exists(path))
+			{
+				result = Result::Success;
+			}
+			else if (path.root_path() == path)
+			{
+				// Cannot create root
+				result = Result::IOError;
+			}
+			else
+			{
+				if (path.has_parent_path())
+				{
+					std::filesystem::path p = path.parent_path();
+					result = CreateFolderIFNRec(p);
+					if (result == Result::Success)
+					{
+						bool b = std::filesystem::create_directory(path);
+						if (b || std::filesystem::is_directory(path))
+						{
+							result = Result::Success;
+						}
+						else
+						{
+							result = Result::IOError;
+						}
+					}
+				}
+				else
+				{
+					result = Result::InvalidValue;
+				}
+			}
+			return result;
+		}
+
+		Result CreateDirectoryCannonicalIFN(std::filesystem::path const& cp)
+		{
+			std::filesystem::path p = cp;
+			if (p.has_filename())
+			{
+				p = p.remove_filename();
+			}
+			return CreateFolderIFNRec(p);
+		}
+
+		Result CreateDirectoryIFN(std::filesystem::path const& path)
+		{
+			std::filesystem::path cp = std::filesystem::weakly_canonical(path);
+			return CreateDirectoryCannonicalIFN(cp);	
+		}
+	}
+
 	namespace img
 	{
 		namespace io
@@ -9,12 +68,12 @@ namespace that
 		
 			namespace netpbm
 			{
-				bool isNetpbm(std::string_view const& ext)
+				bool IsNetpbm(std::string_view const& ext)
 				{
 					return ext == "ppm" || ext == "pgm" || ext == "pbm";
 				}
 
-				bool isNetpbm(std::wstring_view const& ext)
+				bool IsNetpbm(std::wstring_view const& ext)
 				{
 					return ext == L"ppm" || ext == L"pgm" || ext == L"pbm";
 				}
@@ -22,18 +81,18 @@ namespace that
 
 			namespace stbi
 			{
-				bool canReadWrite(std::string_view const& ext)
+				bool CanReadWrite(std::string_view const& ext)
 				{
 					return ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "tga" || ext == "hdr";
 				}
 
-				bool canReadWrite(std::wstring_view const& ext)
+				bool CanReadWrite(std::wstring_view const& ext)
 				{
 					return ext == L"png" || ext == L"jpg" || ext == L"jpeg" || ext == L"tga" || ext == L"hdr";
 				}
 			}
 
-			std::string convertWString(std::wstring_view const& wstr)
+			std::string ConvertWString(std::wstring_view const& wstr)
 			{
 				std::string res;
 				res.resize(wstr.size());
@@ -45,7 +104,7 @@ namespace that
 			// ext_path = some_path.extension();
 			// The pointer guarantees ext_path is not an l-value
 			// std::filesystem::path::extension() should return a string_view on the ext
-			std::path_string_view extractExtensionSV(const std::filesystem::path * ext_path)
+			std::path_string_view ExtractExtensionSV(const std::filesystem::path * ext_path)
 			{
 				std::path_string const& s = ext_path->native();
 				assert(s.front() == '.');

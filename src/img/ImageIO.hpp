@@ -19,6 +19,12 @@
 
 namespace that
 {
+	namespace io
+	{
+		extern Result CreateDirectoryCannonicalIFN(std::filesystem::path const& cannonical_path);
+		extern Result CreateDirectoryIFN(std::filesystem::path const& path);
+	}
+
 	namespace img
 	{
 		namespace io
@@ -28,15 +34,15 @@ namespace that
 		
 			namespace netpbm
 			{
-				extern bool isNetpbm(std::string_view const& ext);
-				extern bool isNetpbm(std::wstring_view const& ext);
+				extern bool IsNetpbm(std::string_view const& ext);
+				extern bool IsNetpbm(std::wstring_view const& ext);
 
 			}
 
 			namespace stbi
 			{
-				extern bool canReadWrite(std::string_view const& ext);
-				extern bool canReadWrite(std::wstring_view const& ext);
+				extern bool CanReadWrite(std::string_view const& ext);
+				extern bool CanReadWrite(std::wstring_view const& ext);
 			}
 
 			using RGBu = RGB<unsigned char>;
@@ -66,9 +72,9 @@ namespace that
 				return T(1);
 			}
 
-			extern std::string convertWString(std::wstring_view const& wstr);
+			extern std::string ConvertWString(std::wstring_view const& wstr);
 
-			extern std::path_string_view extractExtensionSV(const std::filesystem::path* ext_path);
+			extern std::path_string_view ExtractExtensionSV(const std::filesystem::path* ext_path);
 		}
 }
 
