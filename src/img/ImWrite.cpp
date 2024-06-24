@@ -416,7 +416,7 @@ namespace that
 				}
 
 				const std::filesystem::path ext_path = write_path->extension();
-				std::path_string_view ext = ExtractExtensionSV(&ext_path);
+				that::PathStringView ext = ExtractExtensionSV(&ext_path);
 				if (netpbm::IsNetpbm(ext))
 				{
 					writer = WriterLibrary::NETPBM;

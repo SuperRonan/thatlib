@@ -16,9 +16,3 @@ namespace that
 		concept wStringLike = std::convertible_to<T, std::wstring_view>;
 	}
 }
-
-namespace std
-{
-	using path_string = std::filesystem::path::string_type;
-	using path_string_view = basic_string_view<std::filesystem::path::value_type>;
-}

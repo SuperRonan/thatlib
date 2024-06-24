@@ -221,7 +221,7 @@ namespace that
 				if (path.has_extension())
 				{
 					const std::filesystem::path ext_path = path.extension();
-					std::path_string_view ext = ExtractExtensionSV(&ext_path);
+					that::PathStringView ext = ExtractExtensionSV(&ext_path);
 					if (netpbm::IsNetpbm(ext))
 					{
 						return netpbm::ReadFormatedImage(path);

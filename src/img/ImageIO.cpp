@@ -104,11 +104,11 @@ namespace that
 			// ext_path = some_path.extension();
 			// The pointer guarantees ext_path is not an l-value
 			// std::filesystem::path::extension() should return a string_view on the ext
-			std::path_string_view ExtractExtensionSV(const std::filesystem::path * ext_path)
+			that::PathStringView ExtractExtensionSV(const std::filesystem::path * ext_path)
 			{
-				std::path_string const& s = ext_path->native();
+				that::PathString const& s = ext_path->native();
 				assert(s.front() == '.');
-				std::path_string_view ext = std::path_string_view(s.data() + 1, s.size() - 1);
+				that::PathStringView ext = that::PathStringView(s.data() + 1, s.size() - 1);
 				return ext;
 			}
 		}

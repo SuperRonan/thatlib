@@ -15,10 +15,11 @@
 #include "Color.hpp"
 #include "../math/Vector.hpp"
 
-#include <core/Strings.hpp>
+#include <core/Paths.hpp>
 
 namespace that
 {
+
 	namespace io
 	{
 		extern Result CreateDirectoryCannonicalIFN(std::filesystem::path const& cannonical_path);
@@ -74,7 +75,7 @@ namespace that
 
 			extern std::string ConvertWString(std::wstring_view const& wstr);
 
-			extern std::path_string_view ExtractExtensionSV(const std::filesystem::path* ext_path);
+			extern that::PathStringView ExtractExtensionSV(const std::filesystem::path* ext_path);
 		}
 }
 
