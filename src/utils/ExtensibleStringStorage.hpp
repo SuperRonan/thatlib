@@ -10,7 +10,7 @@ namespace that
 {
 	// Stores null terminated strings in one contiguous memory chunk
 	template <class char_t>
-	class BasicExtensibleStringStorage
+	class ExtensibleBasicStringStorage
 	{
 	public:
 
@@ -26,19 +26,19 @@ namespace that
 
 	public:
 
-		constexpr BasicExtensibleStringStorage() = default;
+		constexpr ExtensibleBasicStringStorage() = default;
 
-		constexpr ~BasicExtensibleStringStorage() = default;
+		constexpr ~ExtensibleBasicStringStorage() = default;
 
-		constexpr BasicExtensibleStringStorage(BasicExtensibleStringStorage const& other) = default;
+		constexpr ExtensibleBasicStringStorage(ExtensibleBasicStringStorage const& other) = default;
 
-		constexpr BasicExtensibleStringStorage(BasicExtensibleStringStorage && other) noexcept = default;
+		constexpr ExtensibleBasicStringStorage(ExtensibleBasicStringStorage && other) noexcept = default;
 
-		BasicExtensibleStringStorage& operator=(BasicExtensibleStringStorage const& other) = default;
+		ExtensibleBasicStringStorage& operator=(ExtensibleBasicStringStorage const& other) = default;
 
-		BasicExtensibleStringStorage& operator=(BasicExtensibleStringStorage && other) noexcept = default;
+		ExtensibleBasicStringStorage& operator=(ExtensibleBasicStringStorage && other) noexcept = default;
 
-		void swap(BasicExtensibleStringStorage& other)
+		void swap(ExtensibleBasicStringStorage& other)
 		{
 			_storage.swap(other._storage);
 		}
@@ -151,18 +151,18 @@ namespace that
 		}
 	};
 
-	using ExtensibleStringStorage = BasicExtensibleStringStorage<char>;
+	using ExtensibleStringStorage = ExtensibleBasicStringStorage<char>;
 
 	template <class char_t>
-	using BasicExSS = BasicExtensibleStringStorage<char_t>;
+	using ExBSS = ExtensibleBasicStringStorage<char_t>;
 
-	using ExSS = BasicExSS<char>;
+	using ExSS = ExBSS<char>;
 }
 
 namespace std
 {
 	template <class char_t>
-	void swap(that::BasicExtensibleStringStorage<char_t>& l, that::BasicExtensibleStringStorage<char_t>& r)
+	void swap(that::ExtensibleBasicStringStorage<char_t>& l, that::ExtensibleBasicStringStorage<char_t>& r)
 	{
 		l.swap(r);
 	}
