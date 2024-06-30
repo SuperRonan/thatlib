@@ -1,6 +1,6 @@
 
 #include <utils/ExtensibleDataStorage.hpp>
-
+#include <stl_ext/alignment.hpp>
 
 namespace that
 {
@@ -38,12 +38,19 @@ namespace that
 		_storage.clear();
 	}
 
-	ExtensibleDataStorage::IndexType ExtensibleDataStorage::pushBack(const void* data, IndexType size)
+	ExtensibleDataStorage::IndexType ExtensibleDataStorage::pushBack(const void* data, IndexType size, IndexType align)
 	{
-		const IndexType res = static_cast<IndexType>(_storage.size());
-		growIFN(size);
+		assert(data);
+		const IndexType res = std::alignUp(_storage.size(), align);
+		const IndexType extra_offset = res - _storage.size();
+		growIFN(size + extra_offset);
 		std::memcpy(this->data() + res, data, size);
 		return res;
+	}
+
+	ExtensibleDataStorage::IndexType ExtensibleDataStorage::pushBack(const void* data, IndexType size)
+	{
+		return pushBack(data, size, 1);
 	}
 
 	void ExtensibleDataStorage::swap(ExtensibleDataStorage& other) noexcept

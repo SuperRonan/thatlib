@@ -43,6 +43,8 @@ namespace that
 		void clear();
 		
 		IndexType pushBack(const void* data, IndexType size);
+		
+		IndexType pushBack(const void* data, IndexType size, IndexType align);
 
 		template <class T>
 		IndexType pushBack(T const& t)
