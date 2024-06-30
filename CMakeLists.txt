@@ -24,6 +24,7 @@ file(GLOB THAT_SOURCE
 	src/math/*
 	src/img/*
 	src/utils/*
+	src/stl_ext/*
 )
 add_library(thatlib STATIC ${THAT_SOURCE})
 set_target_properties(thatlib PROPERTIES LINKER_LANGUAGE CXX)
@@ -43,6 +44,7 @@ source_group(core REGULAR_EXPRESSION src/core/.*)
 source_group(math REGULAR_EXPRESSION src/math/.*)
 source_group(img REGULAR_EXPRESSION src/img/.*)
 source_group(utils REGULAR_EXPRESSION src/utils/.*)
+source_group(stl_ext REGULAR_EXPRESSION src/stl_ext/.*)
 target_include_directories(thatlib PUBLIC src)
 
 
