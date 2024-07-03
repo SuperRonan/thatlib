@@ -40,11 +40,13 @@ namespace that
 
 	ExtensibleDataStorage::IndexType ExtensibleDataStorage::pushBack(const void* data, IndexType size, IndexType align)
 	{
-		assert(data);
 		const IndexType res = std::alignUp(_storage.size(), align);
 		const IndexType extra_offset = res - _storage.size();
 		growIFN(size + extra_offset);
-		std::memcpy(this->data() + res, data, size);
+		if (data)
+		{
+			std::memcpy(this->data() + res, data, size);
+		}
 		return res;
 	}
 
