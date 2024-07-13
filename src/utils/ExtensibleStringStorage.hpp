@@ -1,10 +1,12 @@
 #pragma once
 
+#include <core/Core.hpp>
 #include <core/Strings.hpp>
 #include <core/Range.hpp>
 #include <vector>
 #include <cassert>
 #include <cstdarg>
+#include <format>
 
 namespace that
 {
@@ -19,6 +21,8 @@ namespace that
 		using StringType = std::basic_string<char_t>;
 		using StringViewType = std::basic_string_view<char_t>;
 
+		template <class ... Args>
+		using FormatString = std::basic_format_string<char_t, std::type_identity_t<Args>...>;
 
 	protected:
 
@@ -34,21 +38,21 @@ namespace that
 
 		constexpr ExtensibleBasicStringStorage(ExtensibleBasicStringStorage && other) noexcept = default;
 
-		ExtensibleBasicStringStorage& operator=(ExtensibleBasicStringStorage const& other) = default;
+		constexpr ExtensibleBasicStringStorage& operator=(ExtensibleBasicStringStorage const& other) = default;
 
-		ExtensibleBasicStringStorage& operator=(ExtensibleBasicStringStorage && other) noexcept = default;
+		constexpr ExtensibleBasicStringStorage & operator=(ExtensibleBasicStringStorage && other) noexcept = default;
 
-		void swap(ExtensibleBasicStringStorage& other) noexcept
+		constexpr void swap(ExtensibleBasicStringStorage& other) noexcept
 		{
 			_storage.swap(other._storage);
 		}
 
-		void reserve(IndexType capacity)
+		constexpr void reserve(IndexType capacity)
 		{
 			_storage.reserve(capacity);
 		}
 
-		void reserveAdditionalIFN(IndexType extra_capacity)
+		constexpr void reserveAdditionalIFN(IndexType extra_capacity)
 		{
 			const IndexType needed_capacity = size() + extra_capacity;
 			if (needed_capacity > capacity())
@@ -57,28 +61,28 @@ namespace that
 			}
 		}
 
-		void resize(IndexType size)
+		constexpr void resize(IndexType size)
 		{
 			_storage.resize(size);
 		}
 
-		void growIFN(IndexType needed)
+		constexpr void growIFN(IndexType needed)
 		{
 			_storage.resize(needed + _storage.size());
 		}
 
-		void pop(IndexType to_remove = 1)
+		constexpr void pop(IndexType to_remove = 1)
 		{
 			assert(_storage.size() >= to_remove);
 			_storage.resize(_storage.size() - to_remove);
 		}
 
-		void shrink()
+		constexpr void shrink()
 		{
 			_storage.shrink_to_fit();
 		}
 
-		void clear()
+		constexpr void clear()
 		{
 			_storage.clear();
 		}
@@ -103,7 +107,7 @@ namespace that
 			return static_cast<IndexType>(_storage.capacity());
 		}
 
-		IndexType pushBack(std::string_view const& sv, bool terminate_null = true)
+		IndexType pushBack(StringViewType const& sv, bool terminate_null = true)
 		{
 			const IndexType res = size();
 			growIFN(sv.size() + (terminate_null ? 1 : 0));
@@ -157,6 +161,29 @@ namespace that
 			}
 			return res;
 		}
+		
+		template <class ... Args>
+		constexpr Range<IndexType> pushBackFormatted(bool terminate_null, FormatString<Args...> fmt, Args && ... args)
+		{
+			const size_t needed = std::formatted_size(fmt, std::forward<Args>(args)...);
+			Range<IndexType> res;
+			res.begin = size();
+			res.len = needed;
+			growIFN(needed + (terminate_null ? 1 : 0));
+			char_t * const begin = _storage.data() + res.begin;
+			char_t * const end = std::format_to(begin, fmt, std::forward<Args>(args)...);
+			const size_t n = (end - begin);
+			assert(n <= needed);
+			if (n != needed)
+			{
+				THAT_BREAKPOINT_HANDLE;
+			}
+			if (terminate_null)
+			{
+				_storage.back() = char_t(0);
+			}
+			return res;
+		}
 	};
 
 	using ExtensibleStringStorage = ExtensibleBasicStringStorage<char>;
@@ -172,7 +199,7 @@ namespace that
 namespace std
 {
 	template <class char_t>
-	void swap(that::ExtensibleBasicStringStorage<char_t>& l, that::ExtensibleBasicStringStorage<char_t>& r) noexcept
+	constexpr void swap(that::ExtensibleBasicStringStorage<char_t>& l, that::ExtensibleBasicStringStorage<char_t>& r) noexcept
 	{
 		l.swap(r);
 	}

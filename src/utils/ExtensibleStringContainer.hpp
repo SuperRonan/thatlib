@@ -2,6 +2,7 @@
 
 #include "ExtensibleStringStorage.hpp"
 #include <core/Range.hpp>
+#include <core/Strings.hpp>
 
 namespace that
 {
@@ -18,6 +19,9 @@ namespace that
 		using StringType = std::basic_string<char_t>;
 		using StringViewType = std::basic_string_view<char_t>;
 
+		template <class ... Args>
+		using FormatString = std::basic_format_string<char_t, std::type_identity_t<Args>...>;
+
 		using Range = ::that::Range<IndexType>;
 		//using Ranges = std::vector<Range>;
 
@@ -25,6 +29,21 @@ namespace that
 
 		StorageType _storage;
 		std::vector<IndexType> _indices;
+
+		template <concepts::BasicStringLike<char_t> Str>
+		void pushFromInitList(std::initializer_list<Str> const& list)
+		{
+			_indices.reserve(_indices.size() + list.size());
+			if (list.size() > 0)
+			{
+				const Str& str = *list.begin();
+				_storage.reserve(_storage.size() + (GetBasicStringSize<char_t>(str) + 1) * list.size());
+			}
+			for (const auto& s : list)
+			{
+				pushBack(s);
+			}
+		}
 
 	public:
 
@@ -35,8 +54,24 @@ namespace that
 		constexpr ExtensibleBasicStringContainer(ExtensibleBasicStringContainer const&) = default;
 		constexpr ExtensibleBasicStringContainer(ExtensibleBasicStringContainer &&) noexcept = default;
 
+		
+		template <concepts::BasicStringLike<char_t> Str>
+		ExtensibleBasicStringContainer(std::initializer_list<Str> const& list)
+		{
+			pushFromInitList(list);
+		}
+
 		ExtensibleBasicStringContainer& operator=(ExtensibleBasicStringContainer const&) = default;
 		ExtensibleBasicStringContainer& operator=(ExtensibleBasicStringContainer &&) noexcept= default;
+
+		template <concepts::BasicStringLike<char_t> Str>
+		ExtensibleBasicStringContainer& operator=(std::initializer_list<Str> const& list)
+		{
+			_indices.clear();
+			_storage.clear();
+			pushFromInitList(list);
+			return *this;
+		}
 
 		void swap(ExtensibleBasicStringContainer& other) noexcept
 		{
@@ -87,15 +122,15 @@ namespace that
 			_indices.clear();
 		}
 
-		std::string_view operator[](size_t i) const
+		StringViewType operator[](size_t i) const
 		{
 			assert(i < size());
 			return _storage.get(getRange(i));
 		}
 
-		std::string_view at(size_t i) const
+		StringViewType at(size_t i) const
 		{
-			std::string_view res;
+			StringViewType res;
 			if (i < size())
 			{
 				res = operator[](i);
@@ -125,21 +160,22 @@ namespace that
 				_that->_storage.resize(index());
 			}
 
-			operator std::string_view() const
+			operator StringViewType() const
 			{
 				return _that->_storage.get(_that->getBackRange());
 			}
 
-			BackStringReference& operator=(std::string_view const& sv)
+			BackStringReference& operator=(StringViewType const& sv)
 			{
 				clear();
 				_that->_storage.pushBack(sv, true);
 				return *this;
 			}
 
-			BackStringReference& operator+=(std::string_view const& sv)
+			BackStringReference& operator+=(StringViewType const& sv)
 			{
-				
+				_that->_storage.pop(1);
+				_that->_storage.pushBack(sv, true);
 				return *this;
 			}
 
@@ -159,6 +195,20 @@ namespace that
 				_that->_storage.printf(true, format, args);
 				va_end(args);
 			}
+
+			template <class ...Args>
+			void format(bool append, FormatString<Args...> fmt, Args&& ... args)
+			{
+				if (append)
+				{
+					_that->_storage.pop(1);
+				}
+				else
+				{
+					clear();
+				}
+				_that->_storage.pushBackFormatted(true, fmt, std::forward<Args>(args)...);
+			}
 		};
 
 		BackStringReference back()
@@ -167,7 +217,7 @@ namespace that
 			return BackStringReference(this);
 		}
 
-		std::string_view back() const
+		const StringViewType back() const
 		{
 			assert(!empty());
 			return _storage.get(getBackRange());
@@ -179,13 +229,29 @@ namespace that
 			_indices.push_back(index);
 		}
 
-		void pushBack(std::string_view const& sv)
+		void pushBack(StringViewType const& sv)
 		{
 			const size_t index = _storage.pushBack(sv, true);
 			_indices.push_back(index);
 		}
 
-		void push_back(std::string_view const& sv)
+		void printfBack(const char_t* format, ...)
+		{
+			std::va_list args;
+			va_start(args, format);
+			pushBack();
+			back().printf(false, format, args);
+			va_end(args);
+		}
+
+		template <class ... Args>
+		void pushBackFormatted(FormatString<Args...> fmt, Args&& ... args)
+		{
+			pushBack();
+			back().format(false, fmt, std::forward<Args>(args)...);
+		}
+
+		void push_back(StringViewType const& sv)
 		{
 			pushBack(sv);
 		}
@@ -203,7 +269,7 @@ namespace that
 			popBack();
 		}
 
-		ExtensibleBasicStringContainer& operator+=(std::string_view const& sv)
+		ExtensibleBasicStringContainer& operator+=(StringViewType const& sv)
 		{
 			pushBack(sv);
 			return *this;
@@ -211,7 +277,7 @@ namespace that
 
 		ExtensibleBasicStringContainer& operator+=(ExtensibleBasicStringContainer const& other)
 		{
-			const std::string_view sv(other._storage.data(), other._storage.size());
+			const StringViewType sv(other._storage.data(), other._storage.size());
 			const IndexType offset = _storage.pushBack(sv, false);
 			const size_t prev_size = _indices.size();
 			_indices.resize(prev_size + other._indices.size());
@@ -222,6 +288,12 @@ namespace that
 			return *this;
 		}
 
+		template <concepts::BasicStringLike<char_t> Str>
+		ExtensibleBasicStringContainer& operator+=(std::initializer_list<Str> const& list)
+		{
+			pushFromInitList(list);
+			return *this;
+		}
 	};
 
 
