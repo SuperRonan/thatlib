@@ -38,7 +38,7 @@ namespace that
 
 		ExtensibleBasicStringStorage& operator=(ExtensibleBasicStringStorage && other) noexcept = default;
 
-		void swap(ExtensibleBasicStringStorage& other)
+		void swap(ExtensibleBasicStringStorage& other) noexcept
 		{
 			_storage.swap(other._storage);
 		}
@@ -65,6 +65,12 @@ namespace that
 		void growIFN(IndexType needed)
 		{
 			_storage.resize(needed + _storage.size());
+		}
+
+		void pop(IndexType to_remove = 1)
+		{
+			assert(_storage.size() >= to_remove);
+			_storage.resize(_storage.size() - to_remove);
 		}
 
 		void shrink()
@@ -123,7 +129,7 @@ namespace that
 			return res;
 		}
 
-		Range<IndexType> print(bool terminate_null, const char_t* format, ...)
+		Range<IndexType> printf(bool terminate_null, const char_t* format, ...)
 		{
 			static_assert(std::is_same<char_t, char>::value);
 			Range<IndexType> res;
@@ -152,17 +158,19 @@ namespace that
 	};
 
 	using ExtensibleStringStorage = ExtensibleBasicStringStorage<char>;
+	using ExtensibleWideStringStorage = ExtensibleBasicStringStorage<wchar_t>;
 
 	template <class char_t>
 	using ExBSS = ExtensibleBasicStringStorage<char_t>;
 
 	using ExSS = ExBSS<char>;
+	using ExWSS = ExBSS<wchar_t>;
 }
 
 namespace std
 {
 	template <class char_t>
-	void swap(that::ExtensibleBasicStringStorage<char_t>& l, that::ExtensibleBasicStringStorage<char_t>& r)
+	void swap(that::ExtensibleBasicStringStorage<char_t>& l, that::ExtensibleBasicStringStorage<char_t>& r) noexcept
 	{
 		l.swap(r);
 	}
