@@ -115,10 +115,12 @@ namespace that
 			return res;
 		}
 
-		void pushNull()
+		IndexType pushNull()
 		{
+			const IndexType res = size();
 			growIFN(1);
 			_storage.back() = char_t(0);
+			return res;
 		}
 		
 		template <std::integral Index>
