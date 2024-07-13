@@ -1,6 +1,6 @@
 #pragma once
 
-
+#define THAT_BREAKPOINT_HANDLE {int _ = 0;}
 
 namespace that
 {
