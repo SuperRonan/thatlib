@@ -8,9 +8,9 @@
 #include <vector>
 #include <functional>
 
-#include <core/Result.hpp>
-#include <math/Vector.hpp>
-#include <img/Format.hpp>
+#include <that/core/Result.hpp>
+#include <that/math/Vector.hpp>
+#include <that/img/Format.hpp>
 
 #define me (*this)
 

@@ -19,14 +19,32 @@ set(CMAKE_CXX_STANDARD 20)
 #ENDIF()
 #INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 
-file(GLOB THAT_SOURCE 
-	src/core/*
-	src/math/*
-	src/img/*
-	src/utils/*
-	src/stl_ext/*
+set(THATLIB_FOLDERS 
+	core 
+	math
+	img 
+	utils 
+	stl_ext
 )
-add_library(thatlib STATIC ${THAT_SOURCE})
+
+set(THATLIB_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
+set(THATLIB_SOURCE_FOLDER "${THATLIB_ROOT_DIR}/src/")
+set(THATLIB_INCLUDE_FOLDER "${THATLIB_ROOT_DIR}/include/")
+
+set(THATLIB_INCLUDE_FOLDERS ${THATLIB_FOLDERS})
+list(TRANSFORM THATLIB_INCLUDE_FOLDERS PREPEND "${THATLIB_INCLUDE_FOLDER}that/")
+
+set(THATLIB_SOURCE_FOLDERS ${THATLIB_FOLDERS})
+list(TRANSFORM THATLIB_SOURCE_FOLDERS PREPEND "${THATLIB_SOURCE_FOLDER}that/")
+
+set(THATLIB_INCLUDE_FOLDERS_FILES ${THATLIB_INCLUDE_FOLDERS})
+list(TRANSFORM THATLIB_INCLUDE_FOLDERS_FILES APPEND "/*")
+set(THATLIB_SOURCE_FOLDERS_FILES ${THATLIB_SOURCE_FOLDERS})
+list(TRANSFORM THATLIB_SOURCE_FOLDERS_FILES APPEND "/*")
+
+file(GLOB THATLIB_SOURCES ${THATLIB_SOURCE_FOLDERS_FILES} ${THATLIB_INCLUDE_FOLDERS_FILES})
+
+add_library(thatlib STATIC ${THATLIB_SOURCES})
 set_target_properties(thatlib PROPERTIES LINKER_LANGUAGE CXX)
 
 
@@ -36,16 +54,20 @@ target_include_directories(thatlib PUBLIC ext)
 
 ################################################################
 # THATLIB
+target_include_directories(thatlib PUBLIC ${THATLIB_INCLUDE_FOLDER})
 target_compile_definitions(thatlib PUBLIC $<IF:$<CONFIG:Debug>,_ITERATOR_DEBUG_LEVEL=2,_ITERATOR_DEBUG_LEVEL=0>)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP") 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
-source_group(core REGULAR_EXPRESSION src/core/.*)
-source_group(math REGULAR_EXPRESSION src/math/.*)
-source_group(img REGULAR_EXPRESSION src/img/.*)
-source_group(utils REGULAR_EXPRESSION src/utils/.*)
-source_group(stl_ext REGULAR_EXPRESSION src/stl_ext/.*)
-target_include_directories(thatlib PUBLIC src)
+option(THATLIB_SEPARATE_SOURCE_GROUP OFF)
 
+foreach(folder IN LISTS THATLIB_FOLDERS)
+	if(${THATLIB_SEPARATE_SOURCE_GROUP})
+		source_group("sources/${folder}" REGULAR_EXPRESSION "${THATLIB_SOURCE_FOLDER}that/${folder}/.*")
+		source_group("headers/${folder}" REGULAR_EXPRESSION "${THATLIB_INCLUDE_FOLDER}that/${folder}/.*")
+	else()
+		source_group(${folder} "(src|include)/that/${folder}/.*")
+	endif()
+endforeach()
 
 install(TARGETS thatlib DESTINATION lib)

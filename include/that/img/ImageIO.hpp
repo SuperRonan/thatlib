@@ -13,9 +13,9 @@
 
 #include "Image.hpp"
 #include "Color.hpp"
-#include "../math/Vector.hpp"
+#include <that/math/Vector.hpp>
 
-#include <core/Paths.hpp>
+#include <that/core/Paths.hpp>
 
 namespace that
 {

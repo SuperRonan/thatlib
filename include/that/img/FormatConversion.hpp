@@ -2,9 +2,9 @@
 
 #include <bit>
 
-#include <core/Core.hpp>
+#include <that/core/Core.hpp>
 
-#include <img/Format.hpp>
+#include <that/img/Format.hpp>
 
 namespace that
 {

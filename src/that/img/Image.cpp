@@ -1,7 +1,7 @@
-#include <img/Image.hpp>
-#include <math/Half.hpp>
+#include <that/img/Image.hpp>
+#include <that/math/Half.hpp>
 
-#include <img/FormatConversion.hpp>
+#include <that/img/FormatConversion.hpp>
 
 #include <concepts>
 #include <functional>

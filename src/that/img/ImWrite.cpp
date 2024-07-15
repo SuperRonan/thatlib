@@ -1,11 +1,11 @@
-#include "ImWrite.hpp"
+#include <that/img/ImWrite.hpp>
 
 #include <fstream>
 
 #include <stb/stb_image_write.h>
-#include <math/Half.hpp>
+#include <that/math/Half.hpp>
 
-#include <core/Strings.hpp>
+#include <that/core/Strings.hpp>
 
 namespace that
 {

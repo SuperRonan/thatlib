@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../math/Vector.hpp"
+#include <that/math/Vector.hpp>
 #include <type_traits>
 #include <limits>
 

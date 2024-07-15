@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ExtensibleStringStorage.hpp"
-#include <core/Range.hpp>
-#include <core/Strings.hpp>
+#include <that/core/Range.hpp>
+#include <that/core/Strings.hpp>
 
 namespace that
 {

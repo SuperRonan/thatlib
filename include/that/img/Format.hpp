@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <math/Vector.hpp>
-#include <core/BasicTypes.hpp>
+#include <that/math/Vector.hpp>
+#include <that/core/BasicTypes.hpp>
 
 namespace that
 {
