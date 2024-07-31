@@ -7,16 +7,28 @@ namespace that
 	template <class T, class Alloc = std::allocator<T>>
 	class ExtensibleStorage
 	{
+	public:
+
+		using StorageType = std::vector<T, Alloc>;
+		using IndexType = typename StorageType::size_type;
+	
 	protected:
 
-		using IndexType = size_t;
-		std::vector<T, Alloc> _storage;
+		StorageType _storage;
 
 	public:
 
 		constexpr ExtensibleStorage() = default;
 
 		constexpr ~ExtensibleStorage() = default;
+
+		constexpr ExtensibleStorage(StorageType const& other) :
+			_storage(other)
+		{}
+
+		constexpr ExtensibleStorage(StorageType && other) noexcept :
+			_storage(std::move(other))
+		{}
 
 		constexpr ExtensibleStorage(ExtensibleStorage const& other) = default;
 
@@ -25,6 +37,18 @@ namespace that
 		constexpr ExtensibleStorage& operator=(ExtensibleStorage const& other) = default;
 
 		constexpr ExtensibleStorage& operator=(ExtensibleStorage&& other) noexcept = default;
+
+		constexpr ExtensibleStorage& operator=(StorageType const& other)
+		{
+			_storage = other;
+			return *this;
+		}
+
+		constexpr ExtensibleStorage& operator=(StorageType && other) noexcept
+		{
+			_storage = std::move(other);
+			return *this;
+		}
 
 		void swap(ExtensibleStorage& other)
 		{
@@ -65,12 +89,15 @@ namespace that
 			_storage.clear();
 		}
 
-		template <std::convertible_to<T> Q>
+		template <std::convertible_to<T> Q = T>
 		IndexType pushBack(const Q * t, IndexType count = 1)
 		{
 			const IndexType res = _storage.size();
 			growIFN(count);
-			std::copy_n(t, count, data() + res);
+			if (t)
+			{
+				std::copy_n(t, count, data() + res);
+			}
 			return res;
 		}
 
@@ -79,6 +106,7 @@ namespace that
 		{
 			const IndexType res = _storage.size();
 			growIFN(count);
+			assert(!!t);
 			for (IndexType i = 0; i < count; ++i)
 			{
 				data()[res + i] = std::move(t[i]);
@@ -106,6 +134,15 @@ namespace that
 			return static_cast<IndexType>(_storage.capacity());
 		}
 
+		constexpr const std::vector<T, Alloc>& getStorage() const
+		{
+			return _storage;
+		}
+
+		constexpr std::vector<T, Alloc>& getStorage()
+		{
+			return _storage;
+		}
 	};
 
 	template <class T, class Alloc = std::allocator<T>>
