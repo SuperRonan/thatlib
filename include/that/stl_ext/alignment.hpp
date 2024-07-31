@@ -6,6 +6,12 @@
 
 namespace std
 {
+	template <integral Uint> 
+	constexpr Uint bitMask(Uint n)
+	{
+		return (1 << n) - 1;
+	}
+
 	// returns true for 0
 	template <integral Uint>
 	constexpr bool isPowerOf2(Uint i)
