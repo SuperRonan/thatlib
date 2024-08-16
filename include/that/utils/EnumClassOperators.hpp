@@ -31,12 +31,20 @@ static constexpr EnumClassName operator ## op(EnumClassName l, Int r) noexcept\
 	return static_cast<EnumClassName>(static_cast<EnumClassUint>(l) op static_cast<EnumClassUint>(r)); \
 }
 
+#define THAT_DECLARE_ENUM_CLASS_FLAG_BOOL_OPERATOR(EnumClassName, EnumClassUint) \
+static constexpr bool operator!(EnumClassName e) \
+{ \
+	const bool res = static_cast<EnumClassUint>(e) == 0; \
+	return res; \
+}
 
 #define THAT_DECLARE_ENUM_CLASS_OPERATORS(EnumClassName, EnumClassUint) \
 THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR(EnumClassName, EnumClassUint, |) \
 THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR(EnumClassName, EnumClassUint, &) \
+THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR(EnumClassName, EnumClassUint, ^) \
 THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR(EnumClassName, EnumClassUint, <<) \
 THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR(EnumClassName, EnumClassUint, >>) \
 THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR_INTEGRAL(EnumClassName, EnumClassUint, <<) \
-THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR_INTEGRAL(EnumClassName, EnumClassUint, >>)
+THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR_INTEGRAL(EnumClassName, EnumClassUint, >>) \
+THAT_DECLARE_ENUM_CLASS_FLAG_BOOL_OPERATOR(EnumClassName, EnumClassUint)
 
