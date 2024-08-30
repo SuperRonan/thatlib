@@ -6,7 +6,7 @@
 
 namespace that
 {
-	enum class ElementType
+	enum class ElementType : uint16_t
 	{
 		UNORM, // [0, 1]
 		SNORM, // [-1, 1]
@@ -42,8 +42,8 @@ namespace that
 	struct FormatInfo
 	{
 		ElementType type;
-		uint32_t elem_size;
-		uint32_t channels;
+		uint8_t elem_size;
+		uint8_t channels;
 
 		const uint32_t pixelSize()const
 		{
