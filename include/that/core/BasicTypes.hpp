@@ -79,7 +79,16 @@ using sint16_t = int16_t;
 using sint32_t = int32_t;
 using sint64_t = int64_t;
 
-// TODO with C++ 23 fixed float types
+using ushort = unsigned short;
+using sshort = signed short;
+using uint = unsigned int;
+using sint = signed int;
+using ulong = unsigned long;
+using slong = signed long;
+using ullong = unsigned long long;
+using sllong = signed long long;
+
+// TODO with C++ 23 fixed float types (when made available by the compile (hopefully sometime b4 C++ 26 releases))
 using f32 = float;
 using f64 = double;
 
