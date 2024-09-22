@@ -288,12 +288,20 @@ namespace that
 			return *this;
 		}
 
+		ExtensibleBasicStringContainer operator+(ExtensibleBasicStringContainer const& other) const
+		{
+			ExtensibleBasicStringContainer res = *this;
+			res += other;
+			return res;
+		}
+
 		template <concepts::BasicStringLike<char_t> Str>
 		ExtensibleBasicStringContainer& operator+=(std::initializer_list<Str> const& list)
 		{
 			pushFromInitList(list);
 			return *this;
 		}
+
 	};
 
 
