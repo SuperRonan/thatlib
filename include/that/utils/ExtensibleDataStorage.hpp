@@ -73,6 +73,11 @@ namespace that
 		}
 
 		void swap(ExtensibleDataStorage & other) noexcept;
+
+		constexpr const std::vector<uint8_t>& storage() const
+		{
+			return _storage;
+		}
 	};
 
 
