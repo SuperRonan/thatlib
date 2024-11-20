@@ -37,7 +37,7 @@ namespace that
 			if (list.size() > 0)
 			{
 				const Str& str = *list.begin();
-				_storage.reserve(_storage.size() + (GetBasicStringSize<char_t>(str) + 1) * list.size());
+				_storage.reserve(_storage.size() + (GetGenericStringSize(str) + 1) * list.size());
 			}
 			for (const auto& s : list)
 			{
