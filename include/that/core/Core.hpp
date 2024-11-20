@@ -2,6 +2,8 @@
 
 #define THAT_BREAKPOINT_HANDLE {int _ = 0;}
 
+#define FORWARD_MACRO(X) X
+
 namespace that
 {
 	template <bool value>
