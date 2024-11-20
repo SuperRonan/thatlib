@@ -24,6 +24,7 @@ set(THATLIB_FOLDERS
 	math
 	img 
 	utils 
+	IO
 	stl_ext
 )
 

@@ -3,18 +3,35 @@
 #include "ImageIO.hpp"
 #include <stb/stb_image.h>
 
+#include <that/IO/FileSystem.hpp>
+
 namespace that
 {
-	namespace io
-	{
-		extern Result ReadFile(const std::filesystem::path &, std::vector<uint8_t>& buffer);
-	}
 	namespace img
 	{
 		namespace io
 		{
 			
-		
+			struct ReadImageInfo
+			{
+				FileSystem::Hint hint = FileSystem::Hint::None;
+				bool path_is_native = false;
+				const FileSystem::Path* path = nullptr; // required
+				FileSystem* filesystem = nullptr; // optional
+				FormatedImage* target = nullptr; // required
+			};
+			Result ReadFormatedImage(ReadImageInfo const&);
+
+			inline FormatedImage ReadFormatedImage(std::filesystem::path const& path)
+			{
+				ReadImageInfo info = {};
+				FormatedImage res;
+				info.path = &path;
+				info.target = &res;
+				Result result = ReadFormatedImage(info);
+				return res;
+			}
+			
 			namespace netpbm
 			{
 				struct Header
@@ -33,7 +50,7 @@ namespace that
 					}
 				};
 
-				FormatedImage ReadFormatedImage(const std::filesystem::path& path);
+				Result ReadFormatedImage(ReadImageInfo const& info);
 
 				//template <class T, bool RM = IMAGE_ROW_MAJOR>
 				//Image<T, RM> read(const wchar_t* name, T T_max)
@@ -166,82 +183,82 @@ namespace that
 
 			namespace stbi
 			{
-				FormatedImage ReadFormatedImage(std::filesystem::path const& path);
+				Result ReadFormatedImage(ReadImageInfo const& info);
 
-				template <class T, bool RM = IMAGE_ROW_MAJOR>
-				Image<T, RM> read(const wchar_t* path)
-				{
-					if constexpr (RM == IMAGE_COL_MAJOR)
-					{
-						Image<T, IMAGE_ROW_MAJOR> tmp = read<T, IMAGE_ROW_MAJOR>(path);
-						return tmp;
-					}
-					int width, height, number_of_channels;
-					byte* data;
-					std::string spath = ConvertWString(path);
-					try
-					{
-						data = (byte*)stbi_load(spath.c_str(), &width, &height, &number_of_channels, 0);
-					}
-					catch(std::exception const& e)
-					{
-						std::cerr << "STB could not open " << spath << " : " << e.what() << std::endl;
-						if (data)
-							stbi_image_free(data);
-						return Image<T, RM>();
-					}
-					if (width <= 0 || height <= 0 || number_of_channels <= 0)
-					{
-						std::cerr<<"STB could not open the image: "<< stbi_failure_reason();
-						Image<T, RM> res;
-						return res;
-					}
-					Image<T, RM> res(width, height);
+				//template <class T, bool RM = IMAGE_ROW_MAJOR>
+				//Image<T, RM> read(const wchar_t* path)
+				//{
+				//	if constexpr (RM == IMAGE_COL_MAJOR)
+				//	{
+				//		Image<T, IMAGE_ROW_MAJOR> tmp = read<T, IMAGE_ROW_MAJOR>(path);
+				//		return tmp;
+				//	}
+				//	int width, height, number_of_channels;
+				//	byte* data;
+				//	std::string spath = ConvertWString(path);
+				//	try
+				//	{
+				//		data = (byte*)stbi_load(spath.c_str(), &width, &height, &number_of_channels, 0);
+				//	}
+				//	catch(std::exception const& e)
+				//	{
+				//		std::cerr << "STB could not open " << spath << " : " << e.what() << std::endl;
+				//		if (data)
+				//			stbi_image_free(data);
+				//		return Image<T, RM>();
+				//	}
+				//	if (width <= 0 || height <= 0 || number_of_channels <= 0)
+				//	{
+				//		std::cerr<<"STB could not open the image: "<< stbi_failure_reason();
+				//		Image<T, RM> res;
+				//		return res;
+				//	}
+				//	Image<T, RM> res(width, height);
 
-					constexpr const bool T_is_byte = std::is_same<byte, T>::value;
+				//	constexpr const bool T_is_byte = std::is_same<byte, T>::value;
 
-					if (number_of_channels == 1)
-					{
-						Image<byte, RM> tmp(width, height);
-						std::memcpy(tmp.rawData(), data, width * height);
-						res = tmp;
-					}
-					else if (number_of_channels == 3)
-					{
-						if constexpr (T_is_byte)
-						{
-							std::cerr << "Cannot convert image format" << std::endl;
-						}
-						else
-						{
-							Image<RGBu, RM> tmp(width, height);
-							tmp.setData(data);
-							res = tmp;
-						}
-					}
-					else if (number_of_channels == 4)
-					{
-						if constexpr (T_is_byte)
-						{
-							std::cerr << "Cannot convert image format" << std::endl;
-						}
-						else
-						{
-							Image<RGBAu, RM> tmp(width, height);
-							tmp.setData(data);
-							res = tmp;
-						}
-					}
-					if(data)
-					{
-						stbi_image_free(data);
-					}
-				
-					return res;
-				}
+				//	if (number_of_channels == 1)
+				//	{
+				//		Image<byte, RM> tmp(width, height);
+				//		std::memcpy(tmp.rawData(), data, width * height);
+				//		res = tmp;
+				//	}
+				//	else if (number_of_channels == 3)
+				//	{
+				//		if constexpr (T_is_byte)
+				//		{
+				//			std::cerr << "Cannot convert image format" << std::endl;
+				//		}
+				//		else
+				//		{
+				//			Image<RGBu, RM> tmp(width, height);
+				//			tmp.setData(data);
+				//			res = tmp;
+				//		}
+				//	}
+				//	else if (number_of_channels == 4)
+				//	{
+				//		if constexpr (T_is_byte)
+				//		{
+				//			std::cerr << "Cannot convert image format" << std::endl;
+				//		}
+				//		else
+				//		{
+				//			Image<RGBAu, RM> tmp(width, height);
+				//			tmp.setData(data);
+				//			res = tmp;
+				//		}
+				//	}
+				//	if(data)
+				//	{
+				//		stbi_image_free(data);
+				//	}
+				//
+				//	return res;
+				//}
 			}
 		
-			FormatedImage ReadFormatedImage(std::filesystem::path const& path);
+			
 
 			//template <class T, bool RM = true>
 			//Image<T, RM> read(std::filesystem::path const& path)

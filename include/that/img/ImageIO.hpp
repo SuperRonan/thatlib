@@ -20,12 +20,6 @@
 namespace that
 {
 
-	namespace io
-	{
-		extern Result CreateDirectoryCannonicalIFN(std::filesystem::path const& cannonical_path);
-		extern Result CreateDirectoryIFN(std::filesystem::path const& path);
-	}
-
 	namespace img
 	{
 		namespace io

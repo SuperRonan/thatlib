@@ -7,6 +7,10 @@
 
 #include <that/core/Strings.hpp>
 
+#include <that/IO/File.hpp>
+
+#include <that/utils/ExtensibleDataStorage.hpp>
+
 namespace that
 {
 	namespace img
@@ -74,14 +78,19 @@ namespace that
 					*(ptr - 1) = '\n';
 				}
 
-				Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+				Result Write(WriteInfo const& info)
 				{
-					if (!row_major)
+					if (!info.const_image || info.path)
 					{
-						return Result::InvalidValue;
+						return Result::InvalidParameter;
+					}
+					if (!info.row_major)
+					{
+						return Result::InvalidParameter;
 						// TODO
 						//FormatedImage tmp(img.width(), img.height(), format, true);
 					}
+					FormatlessImage const& img = *info.const_image;
 					std::string width = std::to_string(img.width());
 					std::string height = std::to_string(img.height());
 					std::string max_value = "255";
@@ -90,7 +99,7 @@ namespace that
 					{
 						if (info.magic_number < 0)
 						{
-							const uint32_t c = format.channels;
+							const uint32_t c = info.format.channels;
 							if (c == 1)
 							{
 								return 5;
@@ -125,29 +134,16 @@ namespace that
 					std::memcpy(ptr, img.rawData(), content_size);
 
 					Result result = Result::Success;
-					try
 					{
-						if (info.create_folder_ifn)
-						{
-							result = that::io::CreateDirectoryIFN(path);
-							if (result != Result::Success)
-							{
-								return result;
-							}
-						}
-						result = WriteFile(file_data.data(), total_size, path);
-					}
-					catch (std::exception const& e)
-					{
-						std::wcerr << L"ImWrite PPM, could not write " << path << L" because: " << e.what() << '\n';
-						result = Result::FileWriteException;
+						FileSystem::WriteFileInfo fs_info{
+							.hint = info.hint,
+							.path_is_native = info.path_is_native,
+							.path = info.path,
+							.data = file_data,
+						};
+						result = FileSystem::WriteFile(fs_info, info.filesystem);
 					}
 					return result;
-				}
-
-				Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
-				{
-					return ::that::img::io::stbi::Write(img, img.format(), img.rowMajor(), path, info);
 				}
 			}
 
@@ -155,7 +151,7 @@ namespace that
 			{
 				struct WriteContext
 				{
-					std::ofstream & file;
+					ExtensibleDataStorage & file;
 					Result result;
 				};
 			
@@ -164,38 +160,22 @@ namespace that
 					WriteContext* _context = (stbi::WriteContext*)context;
 					if (_context->result == Result::Success)
 					{
-						_context->file.write((const char *)data, static_cast<std::streamsize>(len));
-						if (!_context->file.good())
-						{
-							_context->result = Result::FileWriteError;
-						}
+						_context->file.pushBack(data, len);
 					}
 				}
 			
-				Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
+				Result Write(WriteInfo const& info)
 				{
 					Result result = Result::Success;
-					assert(path.has_extension());
-					const std::filesystem::path ext = path.extension();
-
-					if (info.create_folder_ifn)
+					if (!info.const_image || !info.path)
 					{
-						result = that::io::CreateDirectoryIFN(path);
-						if (result != Result::Success)
-						{
-							return result;
-						}
+						return Result::InvalidParameter;
 					}
-
-					std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);
-					if (!file.is_open() || !file.good())
-					{
-						result = Result::FileWriteError;
-						return result;
-					}
+					const std::filesystem::path ext = info.path->extension();
+					ExtensibleDataStorage storage;
 
 					WriteContext context{
-						.file = file,
+						.file = storage,
 						.result = Result::Success,
 					};
 
@@ -203,31 +183,33 @@ namespace that
 					const int did_not_write = 196;
 					int stbi_res = did_not_write;
 
-					int comp = format.channels;
+					const FormatlessImage & img = *info.const_image; 
+
+					int comp = info.format.channels;
 					if (ext == ".png")
 					{
-						if (format.elem_size == 1)
+						if (info.format.elem_size == 1)
 						{
 							stbi_res = stbi_write_png_to_func(writeFileCallback, &context, img.width(), img.height(), comp, img.rawData(), 0);
 						}
 					}
 					else if (ext == ".bmp")
 					{
-						if (format.elem_size == 1)
+						if (info.format.elem_size == 1)
 						{
 							stbi_res = stbi_write_bmp_to_func(writeFileCallback, &context, img.width(), img.height(), comp, img.rawData());
 						}
 					}
 					else if (ext == ".tga")
 					{
-						if (format.elem_size == 1)
+						if (info.format.elem_size == 1)
 						{
 							stbi_res = stbi_write_tga_to_func(writeFileCallback, &context, img.width(), img.height(), comp, img.rawData());
 						}
 					}
 					else if (ext == ".jpg")
 					{
-						if (format.elem_size == 1)
+						if (info.format.elem_size == 1)
 						{
 							int quality = info.quality;
 							if(quality == -1) quality = 100;
@@ -236,7 +218,7 @@ namespace that
 					}
 					else if (ext == ".hdr")
 					{
-						if ((format.elem_size == sizeof(float)) && format.type == ElementType::FLOAT)
+						if ((info.format.elem_size == sizeof(float)) && info.format.type == ElementType::FLOAT)
 						{
 							stbi_res = stbi_write_hdr_to_func(writeFileCallback, &context, img.width(), img.height(), comp, reinterpret_cast<const float*>(img.rawData()));
 						}
@@ -246,17 +228,24 @@ namespace that
 					else if(stbi_res == 0)	context.result = Result::STBInteralError;
 					else if (context.result == Result::Success)
 					{
-						file.flush();
-						file.close();
+						{
+							FileSystem::WriteFileInfo fs_info{
+								.hint = info.hint,
+								.path_is_native = info.path_is_native,
+								.path = info.path,
+								.data = storage.storage(),
+							};
+							result = FileSystem::WriteFile(fs_info, info.filesystem);
+						}
 					}
 					result = context.result;
 					return result;
 				}
 
-				Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
-				{
-					return that::img::io::stbi::Write(img, img.format(), img.rowMajor(), path, info);
-				}
+				//Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
+				//{
+				//	return that::img::io::stbi::Write(img, img.format(), img.rowMajor(), path, info);
+				//}
 			}
 
 			enum class WriterLibrary
@@ -436,36 +425,49 @@ namespace that
 			}
 
 			
-			Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
-				std::function<Result(FormatInfo const& write_format, bool write_major, const FormatlessImage *& target)> convert_format_f
-			)
+			Result Write(WriteInfo const& info)
 			{
 				Result res = Result::Success;
-				if (img.empty() || path.empty())
+				if (!info.const_image || info.const_image->empty() || !info.path)
 				{
-					return Result::InvalidValue;
+					return Result::InvalidParameter;
 				}
-				const FormatlessImage * target = &img;
+				const FormatlessImage * target = info.const_image;
 
-				const std::filesystem::path * write_path = &path;
+				const std::filesystem::path * write_path = info.path;
 				std::filesystem::path path_with_extension;
 
 				bool need_format_conversion = false;
-				FormatInfo write_format = format;
-				bool write_major = row_major;
+				FormatInfo write_format = info.format;
+				bool write_major = info.row_major;
 				WriterLibrary writer;
 
-				res = CheckWrite(format, row_major, path, info, path_with_extension, write_path, need_format_conversion, write_format, write_major, writer);
+				res = CheckWrite(info.format, info.row_major, *info.path, info, path_with_extension, write_path, need_format_conversion, write_format, write_major, writer);
 
 				if (res != Result::Success)
 				{
 					return res;
 				}
 
-				FormatedImage write_img;
+				WriteInfo info2 = info;
+				info2.format = write_format;
+				info2.row_major = write_major;
+				info2.path = write_path;
+
+				FormatlessImage write_image;
 				if (need_format_conversion)
 				{
-					res = convert_format_f(write_format, write_major, target);
+					if (info.can_modify_image)
+					{
+						res = info.image->convertFormat(info.format, info.row_major, write_format, write_major);
+						info2.image = info.image;
+					}
+					else
+					{
+						write_image = *info.const_image;
+						res = write_image.convertFormat(info.format, info.row_major, info2.format, info2.row_major);
+						info2.const_image = &write_image;
+					}
 					if (res != Result::Success)
 					{
 						return res;
@@ -474,120 +476,18 @@ namespace that
 
 				if (writer == WriterLibrary::NETPBM)
 				{
-					res = netpbm::Write(*target, write_format, write_major, *write_path, info);
+					res = netpbm::Write(info2);
 				}
 				else if (writer == WriterLibrary::STBI)
 				{
-					res = stbi::Write(*target, write_format, write_major, *write_path, info);
+					res = stbi::Write(info2);
 				}
 				else if (writer == WriterLibrary::OPENEXR)
 				{
 					res = Result::NotImplemented;
 				}
 				return res;
-			}
-
-			Result Write(FormatlessImage const& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
-			{
-				FormatlessImage reformated;
-				return Write(img, format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major, const FormatlessImage* target) -> Result
-				{
-					reformated = FormatlessImage(img.width(), img.height(), write_format.pixelSize());
-					target = &reformated;
-					Result result = reformated.convertFormat(format, row_major, write_format, write_major);
-					return result;
-				});
-			}
-
-			Result Write(FormatedImage const& img, std::filesystem::path const& path, WriteInfo const& info)
-			{
-				return Write(img, img.format(), img.rowMajor(), path, info);
-			}
-
-			Result Write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info,
-				std::function<Result(FormatInfo const& write_format, bool write_major)> convert_format_f
-			)
-			{
-				Result res = Result::Success;
-				if (img.empty() || path.empty())
-				{
-					return Result::InvalidValue;
-				}
-
-				const std::filesystem::path* write_path = &path;
-				std::filesystem::path path_with_extension;
-
-				bool need_format_conversion = false;
-				FormatInfo write_format = format;
-				bool write_major = row_major;
-				WriterLibrary writer;
-
-				res = CheckWrite(format, row_major, path, info, path_with_extension, write_path, need_format_conversion, write_format, write_major, writer);
-
-				if (res != Result::Success)
-				{
-					return res;
-				}
-
-				if (need_format_conversion)
-				{
-					res = convert_format_f(write_format, write_major);
-					if (res != Result::Success)
-					{
-						return res;
-					}
-				}
-
-				if (writer == WriterLibrary::NETPBM)
-				{
-					res = netpbm::Write(img, write_format, write_major, *write_path, info);
-				}
-				else if (writer == WriterLibrary::STBI)
-				{
-					res = stbi::Write(img, write_format, write_major, *write_path, info);
-				}
-				else if (writer == WriterLibrary::OPENEXR)
-				{
-					res = Result::NotImplemented;
-				}
-				return res;
-			}
-
-			Result Write(FormatlessImage&& img, FormatInfo const& format, bool row_major, std::filesystem::path const& path, WriteInfo const& info)
-			{
-				return Write(std::move(img), format, row_major, path, info, [&](FormatInfo const& write_format, bool write_major)
-				{
-					return img.convertFormat(format, row_major, write_format, write_major);
-				});
-			}
-
-			Result Write(FormatedImage&& img, std::filesystem::path const& path, WriteInfo const& info)
-			{
-				return Write(std::move(img), img.format(), img.rowMajor(), path, info, [&](FormatInfo const& write_format, bool write_major)
-				{
-					return img.reFormat(write_format, write_major);
-				});
-			}
-
-			Result WriteFile(byte* data, size_t size, std::filesystem::path const& path)
-			{
-				Result res = Result::Success;
-				std::ofstream file(path.c_str(), std::ios::binary | std::ios::out);
-				if (file.good() && file.is_open())
-				{
-					file.write((const char*)data, size);
-					file.flush();
-					file.close();
-					res = Result::Success;
-				}
-				else
-				{
-					res = Result::FileWriteError;
-				}
-				return res;
-			}
-
-		
+			}		
 		}
 
 

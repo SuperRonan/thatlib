@@ -2,65 +2,6 @@
 
 namespace that
 {
-	namespace io
-	{
-		
-		Result CreateFolderIFNRec(std::filesystem::path const& path)
-		{
-			Result result = Result::Success;
-			if (std::filesystem::exists(path))
-			{
-				result = Result::Success;
-			}
-			else if (path.root_path() == path)
-			{
-				// Cannot create root
-				result = Result::IOError;
-			}
-			else
-			{
-				if (path.has_parent_path())
-				{
-					std::filesystem::path p = path.parent_path();
-					result = CreateFolderIFNRec(p);
-					if (result == Result::Success)
-					{
-						bool b = std::filesystem::create_directory(path);
-						if (b || std::filesystem::is_directory(path))
-						{
-							result = Result::Success;
-						}
-						else
-						{
-							result = Result::IOError;
-						}
-					}
-				}
-				else
-				{
-					result = Result::InvalidValue;
-				}
-			}
-			return result;
-		}
-
-		Result CreateDirectoryCannonicalIFN(std::filesystem::path const& cp)
-		{
-			std::filesystem::path p = cp;
-			if (p.has_filename())
-			{
-				p = p.remove_filename();
-			}
-			return CreateFolderIFNRec(p);
-		}
-
-		Result CreateDirectoryIFN(std::filesystem::path const& path)
-		{
-			std::filesystem::path cp = std::filesystem::weakly_canonical(path);
-			return CreateDirectoryCannonicalIFN(cp);	
-		}
-	}
-
 	namespace img
 	{
 		namespace io

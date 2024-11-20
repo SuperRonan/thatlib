@@ -1,36 +1,12 @@
 #include <that/img/ImRead.hpp>
 
+#include <that/IO/File.hpp>
+
 #include <fstream>
 #include <cassert>
 
 namespace that
 {
-
-	namespace io
-	{
-		Result ReadFile(std::filesystem::path const& path, std::vector<uint8_t>& buffer)
-		{
-			Result result = Result::Success;
-			const size_t size = std::filesystem::file_size(path);
-			if (size > 0)
-			{
-				std::ifstream file(path, std::ios::binary | std::ios::in);
-				if (file.is_open() && file.good())
-				{
-					buffer.resize(size);
-					file.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
-					file.close();
-				}
-				else
-				{
-					result = Result::FileReadError;
-				}
-			}
-			return result;
-		}
-	}
-
-
 	namespace img
 	{
 		namespace io
@@ -84,20 +60,27 @@ namespace that
 					}
 				}
 
-				FormatedImage ReadFormatedImage(const std::filesystem::path& path)
+				Result ReadFormatedImage(ReadImageInfo const& info)
 				{
+					Result result = Result::Success;
 					std::vector<byte> file;
-					std::string error;
-					try
+
+					if (!info.target)
 					{
-						Result result = that::io::ReadFile(path, file);
-					}
-					catch (std::exception const& e)
-					{
-						error = e.what();
+						result = Result::InvalidValue;
 					}
 
-					if (error.empty())
+					{
+						FileSystem::ReadFileInfo fs_info{
+							.hint = info.hint,
+							.path_is_native = info.path_is_native,
+							.path = info.path,
+							.result_vector = &file,
+						};
+						result = FileSystem::ReadFile(fs_info, info.filesystem);
+					}
+
+					if (result == Result::Success)
 					{
 						Header header;
 						bool row_major = true;
@@ -150,7 +133,7 @@ namespace that
 
 							eat_comment(ptr, end);
 
-							FormatedImage res(header.width, header.height, format, row_major);
+							*info.target = FormatedImage(header.width, header.height, format, row_major);
 
 							if (mode <= 3) // ASCII
 							{
@@ -158,88 +141,120 @@ namespace that
 							}
 							else // Binary
 							{
-								std::memcpy(res.rawData(), ptr, res.byteSize());
+								std::memcpy(info.target->rawData(), ptr, info.target->byteSize());
 							}
-
-							return res;
 						}
 						catch (std::exception const& e)
 						{
-							error = e.what();
+							result = Result::Exception;
 						}
 					}
 
-					return FormatedImage();
+					return result;
 				}
 			}
 
 			namespace stbi
 			{
-				FormatedImage ReadFormatedImage(std::filesystem::path const& path)
+				Result ReadFormatedImage(ReadImageInfo const& info)
 				{
+					Result result = Result::Success;
 					bool row_major = true;
 					FormatInfo format;
 					int width, height, channels;
 
-					byte * data = nullptr;
-					try
+					if (!info.target)
 					{
-						data = (byte*) stbi_load(path.string().c_str(), &width, &height, &channels, 0);
-					}
-					catch (std::exception const& e)
-					{
-						std::cerr << "STB could not open " << path << " : " << e.what() << std::endl;
-						if (data)
-							stbi_image_free(data);
-						return FormatedImage();
+						result = Result::InvalidParameter;
+						return result;
 					}
 
-					if (width <= 0 || height <= 0 || channels <= 0)
+					std::vector<uint8_t> file;
 					{
-						std::cerr << "STB could not open the image: " << path << ", " << stbi_failure_reason() << std::endl;
-						return FormatedImage();
+						FileSystem::ReadFileInfo fs_info{
+							.hint = info.hint,
+							.path_is_native = info.path_is_native,
+							.path = info.path,
+							.result_vector = &file,
+						};
+						result = FileSystem::ReadFile(fs_info, info.filesystem);
 					}
-					format.type = ElementType::UNORM;
-					format.elem_size = 1;
-					format.channels = channels;
 
-					FormatedImage res(width, height, format, row_major);
+					uint8_t * data = nullptr;
+					if (result == Result::Success)
+					{
+						try
+						{
+							data = stbi_load_from_memory(file.data(), file.size(), &width, &height, &channels, 0);
+						}
+						catch (std::exception const& e)
+						{
+							result = Result::STBInteralError;
+							if (data)
+							{
+								stbi_image_free(data);
+							}
+						}
+					}
 
-					std::memcpy(res.rawData(), data, res.byteSize());
+					if (result == Result::Success)
+					{
+						if (width <= 0 || height <= 0 || channels <= 0)
+						{
+							result = Result::InvalidValue;
+						}
+						else
+						{
+							format.type = ElementType::UNORM;
+							format.elem_size = 1;
+							format.channels = channels;
+
+							*info.target = FormatedImage(width, height, format, row_major);
+
+							std::memcpy(info.target->rawData(), data, info.target->byteSize());
+						}
+					}
 
 					if (data)
 					{
 						stbi_image_free(data);
 					}
 
-					return res;
+					return result;
 				}
 			}
 
-			FormatedImage ReadFormatedImage(std::filesystem::path const& path)
+			Result ReadFormatedImage(ReadImageInfo const& info)
 			{
-				if (path.has_extension())
+				Result result = Result::Success;
+				if (!info.path)
 				{
-					const std::filesystem::path ext_path = path.extension();
+					result = Result::InvalidParameter;
+					return result;
+				}
+				if (info.path->has_extension())
+				{
+					const std::filesystem::path ext_path = info.path->extension();
 					that::PathStringView ext = ExtractExtensionSV(&ext_path);
 					if (netpbm::IsNetpbm(ext))
 					{
-						return netpbm::ReadFormatedImage(path);
+						result = netpbm::ReadFormatedImage(info);
+						result = netpbm::ReadFormatedImage(info);
 					}
 					else if (stbi::CanReadWrite(ext))
 					{
-						return stbi::ReadFormatedImage(path);
+						result = stbi::ReadFormatedImage(info);
 					}
 					else
 					{
-						std::cerr << "ImRead: unknown extention \"" << ext_path << "\" of " << path << '\n';
+						result = Result::UnknownFileExtension;
 					}
 				}
 				else
 				{
-					std::cerr << "ImRead: file " << path << " has no extension, could not read it!\n";
+					result = Result::InvalidParameter;
 				}
-				return FormatedImage();
+				return result;
 			}
 		}
 	}
