@@ -94,6 +94,16 @@ namespace that
 			return _mounting_points;
 		}
 
+		MacroMap& macros()
+		{
+			return _macros;
+		}
+
+		MacroMap const& macros() const
+		{
+			return _macros;
+		}
+
 		// Extracts the mounting point of path (what is left of :) 
 		// "ShaderLib:/folder/shader.glsl" -> "ShaderLib"
 		// "C:/folder/folder2/" -> "C"
