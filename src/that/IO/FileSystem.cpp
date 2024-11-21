@@ -123,6 +123,9 @@ namespace that
 
 	ResultAnd<FileSystem::Path> FileSystem::resolveMacros(PathStringView const& path, Hint hint) const
 	{
+		// TODO nested macro resolution
+		// For example: if macro A is known as "$(B)", then we need to solve $(B) (and so one recursively / iteratively)
+		// What about $($(C))? Should it be legal (I think yes, but it requires more complex parsing)
 		PathString res;
 		size_t copied_so_far = 0;
 		const PathStringView op = GetMacroOpening(), cl = GetMacroClosing();
