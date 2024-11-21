@@ -186,7 +186,7 @@ namespace that
 		{
 			absorbUpTo(path.size());
 		}
-		return {Result::Success, path};
+		return {Result::Success, res};
 	}
 	
 	static thread_local ResultAnd<FileSystem::Path> _tmp_path;
