@@ -73,7 +73,6 @@ namespace that
 					{
 						FileSystem::ReadFileInfo fs_info{
 							.hint = info.hint,
-							.path_is_native = info.path_is_native,
 							.path = info.path,
 							.result_vector = &file,
 						};
@@ -173,7 +172,6 @@ namespace that
 					{
 						FileSystem::ReadFileInfo fs_info{
 							.hint = info.hint,
-							.path_is_native = info.path_is_native,
 							.path = info.path,
 							.result_vector = &file,
 						};

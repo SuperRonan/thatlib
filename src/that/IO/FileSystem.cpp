@@ -191,6 +191,28 @@ namespace that
 		}
 		return {Result::Success, res};
 	}
+
+	ResultAnd<FileSystem::Path> FileSystem::resolve(PathStringView const& path, Hint hint) const
+	{
+		ResultAnd<Path> res = resolveMacros(path, hint);
+		if (res.result == Result::Success)
+		{
+			res = resolveMountingPointsIFN(res.value);
+		}
+		return res;
+	}
+
+	ResultAnd<FileSystem::Path> FileSystem::cannonize(Path const& path) const
+	{
+		std::error_code ec;
+		ResultAnd<FileSystem::Path> res;
+		res.value = std::filesystem::canonical(path, ec);
+		if (ec)
+		{
+			res.result = Result::InvalidParameter;
+		}
+		return res;
+	}
 	
 	static thread_local ResultAnd<FileSystem::Path> _tmp_path;
 
@@ -200,7 +222,7 @@ namespace that
 		const Path * path;
 		if (info.path)
 		{
-			if (info.path_is_native)
+			if (!!(info.hint & Hint::PathIsNative))
 			{
 				path = info.path;
 			}
@@ -268,7 +290,7 @@ namespace that
 		const Path* path;
 		if (info.path)
 		{
-			if (info.path_is_native)
+			if (!!(info.hint & Hint::PathIsNative))
 			{
 				path = info.path;
 			}
@@ -323,23 +345,53 @@ namespace that
 		}
 	}
 
-	ResultAnd<FileSystem::TimePoint> FileSystem::getFileTime(Path const& path, bool path_is_native) const
+	ResultAnd<FileSystem::TimePoint> FileSystem::getFileLastWriteTime(Path const& path, Hint hint) const
 	{
-		if (!path_is_native)
+		FileInfos const& infos = getFileInfos(path, hint);
+		return {infos.result, infos.last_write_time};
+	}
+
+	FileSystem::FileInfos FileSystem::getFileInfos(Path const& path, Hint hint, bool get_file_time, bool get_status) const
+	{
+		if (!(hint & Hint::PathIsNative))
 		{
 			_tmp_path = resolve(path);
 			if (_tmp_path.result == Result::Success)
 			{
-				return getFileTime(_tmp_path.value, true);
+				return getFileInfos(_tmp_path.value, hint | Hint::PathIsNative);
 			}
 			else
 			{
-				return {_tmp_path.result, {}};
+				FileInfos res;
+				res.result = _tmp_path.result;
+				return res;
 			}
 		}
 		else
 		{
-			return {Result::Success, std::filesystem::last_write_time(path)};
+			FileInfos res;
+			if (std::filesystem::exists(path))
+			{
+				res.result = Result::Success;
+				if (get_file_time)
+				{
+					res.last_write_time = std::filesystem::last_write_time(path);
+				}
+				if (get_status)
+				{
+					res.status = std::filesystem::status(path);
+				}
+			}
+			else
+			{
+				res.result = Result::FileDoesNotExist;
+			}
+			return res;
 		}
+	}
+
+	Result FileSystem::checkFileExists(Path const& path, Hint hint) const
+	{
+		return getFileInfos(path, hint, false, false).result;
 	}
 }

@@ -137,7 +137,6 @@ namespace that
 					{
 						FileSystem::WriteFileInfo fs_info{
 							.hint = info.hint,
-							.path_is_native = info.path_is_native,
 							.path = info.path,
 							.data = file_data,
 						};
@@ -231,7 +230,6 @@ namespace that
 						{
 							FileSystem::WriteFileInfo fs_info{
 								.hint = info.hint,
-								.path_is_native = info.path_is_native,
 								.path = info.path,
 								.data = storage.storage(),
 							};

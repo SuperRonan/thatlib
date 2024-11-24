@@ -37,15 +37,16 @@ namespace that
 		using TimePoint = Clock::time_point;
 		using Duration = Clock::duration;
 
-		enum class Hint
+		enum class Hint : uint32_t
 		{
 			None = 0x0,
-			DontCreateDirectory = 0x1,
+			PathIsNative = 0x1,
+			DontCreateDirectory = 0x2,
 			UnknownMacroAsError = 0x0,
-			UnknownMacroAsBlank = 0x2,
-			UnknownMacroAsItSelf = 0x4,
-			UnknownMacroUnmodified = 0x6,
-			UnknownMacroMask = 0x6,
+			UnknownMacroAsBlank = 0x4,
+			UnknownMacroAsItSelf = 0x8,
+			UnknownMacroUnmodified = 0xC,
+			UnknownMacroMask = UnknownMacroUnmodified,
 		};
 
 		using MacroMap = StringMap<PathChar, PathString>;
@@ -137,25 +138,18 @@ namespace that
 
 		ResultAnd<Path> resolveMacros(PathStringView const& path, Hint hint = Hint::None) const;
 
-		ResultAnd<Path> resolve(PathStringView const& path, Hint hint = Hint::None) const
-		{
-			ResultAnd<Path> res = resolveMacros(path, hint);
-			if (res.result == Result::Success)
-			{
-				res = resolveMountingPointsIFN(res.value);
-			}
-			return res;
-		}
+		ResultAnd<Path> resolve(PathStringView const& path, Hint hint = Hint::None) const;
 
 		ResultAnd<Path> resolve(Path const& path, Hint hint = Hint::None) const
 		{
 			return resolve(PathStringView(path.native()), hint);
 		}
 
+		ResultAnd<Path> cannonize(Path const& path) const;
+
 		struct ReadFileInfo
 		{
 			Hint hint = Hint::None;
-			bool path_is_native = false;
 			const Path * path = nullptr;
 			std::vector<uint8_t> * result_vector = nullptr;
 			std::string * result_string = nullptr;
@@ -168,7 +162,6 @@ namespace that
 		struct WriteFileInfo
 		{
 			Hint hint = Hint::None;
-			bool path_is_native = false;
 			const Path * path = nullptr;
 			std::span<const uint8_t> data = {};
 		};
@@ -177,7 +170,22 @@ namespace that
 		static Result WriteFileToDisk(WriteFileInfo const& info);
 		static Result WriteFile(WriteFileInfo const& info, FileSystem * fs = nullptr);
 
-		ResultAnd<TimePoint> getFileTime(Path const& path, bool path_is_native = false) const;
+		ResultAnd<TimePoint> getFileLastWriteTime(Path const& path, Hint hint = Hint::None) const;
+
+		Result checkFileExists(Path const& path, Hint hint = Hint::None) const;
+
+		struct FileInfos
+		{
+			Result result = {};
+			TimePoint last_write_time = {};
+			std::filesystem::file_status status = {};
+		};
+
+		FileInfos getFileInfos(Path const& path, Hint hint, bool get_write_time, bool get_status) const;
+		FileInfos getFileInfos(Path const& path, Hint hint = Hint::None) const
+		{
+			return getFileInfos(path, hint, true, true);
+		}
 
 		// TODO get a handle to a file 
 	};
