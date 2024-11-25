@@ -41,11 +41,12 @@ namespace that
 		{
 			None = 0x0,
 			PathIsNative = 0x1,
-			DontCreateDirectory = 0x2,
+			PathIsCannon = PathIsNative << 1,
+			DontCreateDirectory = PathIsCannon << 1,
 			UnknownMacroAsError = 0x0,
-			UnknownMacroAsBlank = 0x4,
-			UnknownMacroAsItSelf = 0x8,
-			UnknownMacroUnmodified = 0xC,
+			UnknownMacroAsBlank = DontCreateDirectory << 1,
+			UnknownMacroAsItSelf = UnknownMacroAsBlank << 1,
+			UnknownMacroUnmodified = UnknownMacroAsBlank | UnknownMacroAsItSelf,
 			UnknownMacroMask = UnknownMacroUnmodified,
 		};
 
