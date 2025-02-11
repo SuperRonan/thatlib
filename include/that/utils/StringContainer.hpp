@@ -61,7 +61,7 @@ namespace that
 		template <concepts::GenericString Str>
 		static String const& Convert(Str const& src)
 		{
-			return ParentType::Convert<Str>(src);
+			return ParentType::template Convert<Str>(src);
 		}
 
 	public:

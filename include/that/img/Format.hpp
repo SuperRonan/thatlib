@@ -54,7 +54,7 @@ namespace that
 		static constexpr FormatInfo Deduce()
 		{
 			FormatInfo res;
-			if constexpr (math::Is_Vector<T>)
+			if constexpr (math::Is_Vector<T>::value)
 			{
 				res.channels = T::size();
 				using Scalar = typename T::_Type;

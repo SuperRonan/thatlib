@@ -31,7 +31,7 @@ namespace that
 			constexpr Vector() noexcept
 			{
 				// This assumes a 0 of T is made of bytes 0
-				std::memset(m_data, 0, N * sizeof T);
+				std::memset(m_data, 0, N * sizeof(T));
 			}
 
 			template <class Q, class... Args>
@@ -56,7 +56,7 @@ namespace that
 			{
 				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
 				{
-					std::memcpy(m_data, other.m_data, N * sizeof T);
+					std::memcpy(m_data, other.m_data, N * sizeof(T));
 				}
 				else
 				{
@@ -68,7 +68,7 @@ namespace that
 			{
 				if constexpr (std::is_trivially_copyable<T>::value)
 				{
-					std::memcpy(m_data, other.m_data, N * sizeof T);
+					std::memcpy(m_data, other.m_data, N * sizeof(T));
 				}
 				else
 				{
@@ -81,7 +81,7 @@ namespace that
 			{
 				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
 				{
-					std::memcpy(m_data, other.m_data, N * sizeof T);
+					std::memcpy(m_data, other.m_data, N * sizeof(T));
 				}
 				else
 				{
@@ -94,7 +94,7 @@ namespace that
 			{
 				if constexpr (std::is_trivially_copyable<T>::value)
 				{
-					std::memcpy(m_data, other.m_data, N * sizeof T);
+					std::memcpy(m_data, other.m_data, N * sizeof(T));
 				}
 				else
 				{
