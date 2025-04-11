@@ -25,7 +25,6 @@ namespace that
 		using String = ParentType::String;
 
 		using Value = Value_t;
-		using String = StringContainerBase<char_t>::String;
 
 	protected:
 
