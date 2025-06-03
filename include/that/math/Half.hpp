@@ -115,10 +115,10 @@ namespace that
 
 			constexpr Half& operator=(Half const&) noexcept = default;
 
-			Half(float32_t f) noexcept
+			constexpr Half(const float32_t f) noexcept
 			{
 				// Fast conversion, no checks for special cases 
-				const uint32_t &u = reinterpret_cast<uint32_t&>(f);
+				const uint32_t u = std::bit_cast<uint32_t>(f);
 				const uint32_t exp32_bin = (u & ExponentMask32()) >> ExponentOffset32();
 				const uint32_t mantissa32 = u & MantissaMask32();
 				constexpr const uint16_t mantissa_shift = MantissaBits32() - MantissaBits16();
@@ -147,11 +147,11 @@ namespace that
 				}
 			}
 
-			operator float32_t() noexcept
+			constexpr operator float32_t() const noexcept
 			{
 				// inspired by https://fgiesen.wordpress.com/2012/03/28/half-to-float-done-quic/
-				float32_t res;
-				uint32_t & u = reinterpret_cast<uint32_t&>(res);
+				
+				uint32_t u = 0;
 				u = ((_data & SignMask16()) << 16);
 				const uint16_t exp16_bin = ((_data & ExponentMask16()) >> ExponentOffset16());
 				const uint16_t mantissa16 = _data & MantissaMask16();
@@ -182,10 +182,7 @@ namespace that
 				u |= (exp32_bin << ExponentOffset32());
 				u |= (mantissa32 << mantissa_shift);
 				
-				if (res > 130000)
-				{
-					int _ = 0;
-				}
+				const float32_t res = std::bit_cast<float32_t>(u);
 
 				return res;
 			}
