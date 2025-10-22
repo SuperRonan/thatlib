@@ -6,6 +6,8 @@
 
 #define FORWARD_MACRO(X) X
 
+#define DECLARE_ENUM_VALUE_1(Name) Name,
+
 namespace that
 {
 	template <bool value>
