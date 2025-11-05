@@ -624,6 +624,7 @@ namespace that
 		{
 			_format = format;
 			_row_major = new_row_major;
+			_pixel_size = _format.pixelSize();
 			resize(_w, _h, _format.pixelSize());
 		}
 
