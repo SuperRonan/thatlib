@@ -363,7 +363,8 @@ namespace that
 								else
 								{
 									write_format.elem_size = 1;
-									write_format.type = ElementType::UNORM;
+									// STBI implicitely expects sRGB data
+									write_format.type = ElementType::sRGB;
 									need_format_conversion = true;
 								}
 							}

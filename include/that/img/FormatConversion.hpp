@@ -161,21 +161,25 @@ namespace that
 		return res;
 	}
 
+	// sRGB to linear float
 	template <std::floating_point DstFloat, std::unsigned_integral sRGB>
 	constexpr DstFloat ConvertsRGBToFloat(sRGB s)
 	{
 		using ComputeFloat = typename FloatTypePerSize<std::max<size_t>(4, sizeof(DstFloat))>::type;
 		ComputeFloat res = ConvertNormToFloat<ComputeFloat>(s);
-		res = std::pow(res, 1.0 / 2.2);
+		// This is the approximate sRGB EOTF
+		res = std::pow(res, 2.2);
 		return res;
 	}
 
+	// linear float to sRGB
 	template <std::unsigned_integral sRGB, std::floating_point SrcFloat>
 	constexpr sRGB ConvertFloatTosRGB(SrcFloat f)
 	{
 		using ComputeFloat = typename FloatTypePerSize<std::max<size_t>(4, sizeof(SrcFloat))>::type;
 		ComputeFloat d = std::clamp<ComputeFloat>(f, 0, 1);
-		f = std::pow(d, 2.2);
+		// This is the approximate sRGB OETF
+		f = std::pow(d, 1.0 / 2.2);
 		sRGB res = ConvertFloatToNorm<sRGB>(f);
 		return res;
 	}

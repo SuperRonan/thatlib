@@ -250,7 +250,18 @@ namespace that
 
 				for (uint32_t i = 0; i < channels; ++i)
 				{
-					convert_channel(typed_src[i], typed_dst[i]);
+					if (i == 3)
+					{
+						// Special case for the alpha channel
+						constexpr const ElementType src_type_alpha = src_type == ElementType::sRGB ? ElementType::UNORM : src_type;
+						constexpr const ElementType dst_type_alpha = dst_type == ElementType::sRGB ? ElementType::UNORM : dst_type;
+						auto convert_channel_alpha = GetConvertPixelChannelFunction<src_type_alpha, src_size, dst_type_alpha, dst_size>();
+						convert_channel_alpha(typed_src[i], typed_dst[i]);
+					}
+					else
+					{
+						convert_channel(typed_src[i], typed_dst[i]);
+					}
 				}
 				if (zero_channels)
 				{
@@ -506,11 +517,22 @@ namespace that
 					}
 					else if(narrowing)
 					{
-						auto f = [&](const byte* src_pixel, byte* dst_pixel)
+						if (same_buffer)
 						{
-							std::memcpy(dst_pixel, src_pixel, dst_pixel_size);
-						};
-						ProcessPerPixel(params, f);
+							auto f = [&](const byte* src_pixel, byte* dst_pixel)
+							{
+								std::memmove(dst_pixel, src_pixel, dst_pixel_size);
+							};
+							ProcessPerPixel(params, f);
+						}
+						else
+						{
+							auto f = [&](const byte* src_pixel, byte* dst_pixel)
+							{
+								std::memcpy(dst_pixel, src_pixel, dst_pixel_size);
+							};
+							ProcessPerPixel(params, f);
+						}
 						result = Result::Success;
 					}
 					else
