@@ -519,11 +519,10 @@ namespace that
 					{
 						if (same_buffer)
 						{
-							auto f = [&](const byte* src_pixel, byte* dst_pixel)
+							for(size_t i = 1, s = params.w * params.h; i < s; ++ i)
 							{
-								std::memmove(dst_pixel, src_pixel, dst_pixel_size);
-							};
-							ProcessPerPixel(params, f);
+								std::memcpy(params.dst + i * dst_pixel_size, params.dst + i * src_pixel_size, dst_pixel_size);
+							}
 						}
 						else
 						{
