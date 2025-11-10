@@ -4,10 +4,13 @@
 
 #include <Windows.h>
 
+#include <atomic>
+
 namespace that
 {
 	FileSystem::FileSystem(CreateInfo const& ci):
-		_mounting_points(ci._mounting_points)
+		_mounting_points(ci._mounting_points),
+		_use_cache(ci.use_cache)
 	{
 		querySystemMountingPoints();
 	}
@@ -44,6 +47,20 @@ namespace that
 
 	FileSystem::~FileSystem()
 	{}
+
+	void FileSystem::Cache::clear()
+	{
+		_map.clear();
+	}
+
+	void FileSystem::resetCache()
+	{
+		_cache_mutex.lock();
+		{
+			_cache.clear();
+		}
+		_cache_mutex.unlock();
+	}
 
 	ResultAnd<FileSystem::PathStringView> FileSystem::ExtractMountingPoint(PathStringView const& path)
 	{
@@ -215,6 +232,7 @@ namespace that
 	}
 	
 	static thread_local ResultAnd<FileSystem::Path> _tmp_path;
+	static thread_local ResultAnd<FileSystem::Path> _tmp_path2;
 
 	Result FileSystem::readFile(ReadFileInfo const& info)
 	{
@@ -347,7 +365,7 @@ namespace that
 
 	ResultAnd<FileSystem::TimePoint> FileSystem::getFileLastWriteTime(Path const& path, Hint hint) const
 	{
-		FileInfos const& infos = getFileInfos(path, hint);
+		FileInfos const& infos = getFileInfos(path, hint, true, false);
 		return {infos.result, infos.last_write_time};
 	}
 
@@ -370,21 +388,75 @@ namespace that
 		else
 		{
 			FileInfos res;
-			if (std::filesystem::exists(path))
+			res.result = Result::NotReady;
+
+			auto& cannon_path = _tmp_path2;
+
+			if (_use_cache > 0 && bool(hint & Hint::QueryCache))
 			{
-				res.result = Result::Success;
-				if (get_file_time)
+				if (bool(Hint::PathIsCannon))
 				{
-					res.last_write_time = std::filesystem::last_write_time(path);
+					cannon_path = {Result::Success, path};
 				}
-				if (get_status)
+				else
 				{
-					res.status = std::filesystem::status(path);
+					cannon_path = cannonize(path);
+				}
+
+				if (cannon_path.result == Result::Success)
+				{
+					_cache_mutex.lock_shared();
+					if (_cache._map.contains(cannon_path.value.native()))
+					{
+						const Cache::Value& cached_value = _cache._map.at(cannon_path.value.native());
+						res.last_write_time = cached_value.last_write_time;
+						res.status = cached_value.status;
+						auto atomic_counter = std::atomic_ref<decltype(Cache::Value::counter)>(cached_value.counter);
+						++atomic_counter;
+						res.result = Result::Success;
+					}
+					_cache_mutex.unlock_shared();
 				}
 			}
-			else
+			if (res.result == Result::NotReady)
 			{
-				res.result = Result::FileDoesNotExist;
+				if (std::filesystem::exists(path))
+				{
+					bool update_cache = _use_cache > 0 && !bool(hint & Hint::DontUpdateCache) && cannon_path.result == Result::Success;
+					if (update_cache)
+					{
+						get_file_time = true;
+						get_status = true;
+					}
+					res.result = Result::Success;
+					if (get_file_time)
+					{
+						res.last_write_time = std::filesystem::last_write_time(path);
+					}
+					if (get_status)
+					{
+						res.status = std::filesystem::status(path);
+					}
+
+					if (update_cache)
+					{
+						Cache::Value cached_value{
+							.register_time = Clock::now(),
+							.last_write_time = res.last_write_time,
+							.status = res.status,
+							.counter = 1,
+						};
+						_cache_mutex.lock();
+						{
+							_cache._map[cannon_path.value.native()] = cached_value;
+						}
+						_cache_mutex.unlock();
+					}
+				}
+				else
+				{
+					res.result = Result::FileDoesNotExist;
+				}
 			}
 			return res;
 		}

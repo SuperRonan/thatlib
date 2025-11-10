@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <chrono>
 #include <map>
+#include <shared_mutex>
 
 #include <that/IO/MountingPoints.hpp>
 #include <that/utils/StringSet.hpp>
@@ -48,6 +49,8 @@ namespace that
 			UnknownMacroAsItSelf = UnknownMacroAsBlank << 1,
 			UnknownMacroUnmodified = UnknownMacroAsBlank | UnknownMacroAsItSelf,
 			UnknownMacroMask = UnknownMacroUnmodified,
+			QueryCache = UnknownMacroAsItSelf << 1, // Check the cache before querying the filesystem API
+			DontUpdateCache = QueryCache << 1, // Don't cache the result of the filesystem API
 		};
 
 		using MacroMap = StringMap<PathChar, PathString>;
@@ -74,17 +77,54 @@ namespace that
 
 		void querySystemMountingPoints();
 
+		class Cache
+		{
+		public:
+
+			struct Value
+			{
+				TimePoint register_time = {};
+				TimePoint last_write_time = {};
+				std::filesystem::file_status status = {};
+				mutable size_t counter = 0;
+			};
+
+		protected:
+
+			using Map = std::unordered_map<PathString, Value>;
+
+			Map _map;
+
+			friend class FileSystem;
+
+		public:
+
+			void clear();
+
+			
+
+		};
+
+		mutable std::shared_mutex _cache_mutex;
+		mutable Cache _cache;
+
+
+		int _use_cache = 0;
+
 	public:
 
 		struct CreateInfo
 		{
 			MountingPoints _mounting_points = {};
+			int use_cache = 0;
 		};
 		using CI = CreateInfo;
 
 		FileSystem(CreateInfo const& ci);
 
 		~FileSystem();
+
+		void resetCache();
 
 		MountingPoints& mountingPoints()
 		{
