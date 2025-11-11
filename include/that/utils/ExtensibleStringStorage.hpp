@@ -111,7 +111,7 @@ namespace that
 		{
 			const IndexType res = size();
 			growIFN(sv.size() + (terminate_null ? 1 : 0));
-			std::memcpy(_storage.data() + res, sv.data(), sv.size());
+			std::memcpy(_storage.data() + res, sv.data(), sv.size() * sizeof(char_t));
 			if (terminate_null)
 			{
 				_storage.back() = char_t(0);
