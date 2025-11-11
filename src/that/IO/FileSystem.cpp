@@ -209,6 +209,9 @@ namespace that
 		return {Result::Success, res};
 	}
 
+	static thread_local ResultAnd<FileSystem::Path> _tmp_path;
+	static thread_local ResultAnd<FileSystem::Path> _tmp_path2;
+
 	ResultAnd<FileSystem::Path> FileSystem::resolve(PathStringView const& path, Hint hint) const
 	{
 		ResultAnd<Path> res = resolveMacros(path, hint);
@@ -230,9 +233,33 @@ namespace that
 		}
 		return res;
 	}
+
+	ResultAnd<FileSystem::Path> FileSystem::cannonize(PathStringView const& path) const
+	{
+		_tmp_path2.value = path;
+		return cannonize(_tmp_path2.value);
+	}
 	
-	static thread_local ResultAnd<FileSystem::Path> _tmp_path;
-	static thread_local ResultAnd<FileSystem::Path> _tmp_path2;
+	bool FileSystem::isCannon(Path const& path) const
+	{
+		_tmp_path = cannonize(path);
+		bool res;
+		if (_tmp_path.result == Result::Success)
+		{
+			res = (path == _tmp_path.value);
+		}
+		else
+		{
+			res = false;
+		}
+		return res;
+	}
+
+	bool FileSystem::isCannon(PathStringView const& path) const
+	{
+		_tmp_path2.value = path;
+		return isCannon(_tmp_path2.value);
+	}
 
 	Result FileSystem::readFile(ReadFileInfo const& info)
 	{

@@ -186,7 +186,11 @@ namespace that
 			return resolve(PathStringView(path.native()), hint);
 		}
 
+		ResultAnd<Path> cannonize(PathStringView const& path) const;
 		ResultAnd<Path> cannonize(Path const& path) const;
+
+		bool isCannon(PathStringView const& path) const;
+		bool isCannon(Path const& path) const;
 
 		struct ReadFileInfo
 		{
