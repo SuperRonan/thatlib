@@ -239,7 +239,23 @@ namespace that
 		_tmp_path2.value = path;
 		return cannonize(_tmp_path2.value);
 	}
+
+	ResultAnd<FileSystem::Path> FileSystem::resolveAndCannonize(PathStringView const& path) const
+	{
+		auto res = resolve(path);
+		if (res.result == Result::Success)
+		{
+			res = cannonize(res.value);
+		}
+		return res;
+	}
 	
+	ResultAnd<FileSystem::Path> FileSystem::resolveAndCannonize(Path const& path) const
+	{
+		return resolveAndCannonize(PathStringView(path.native()));
+	}
+
+
 	bool FileSystem::isCannon(Path const& path) const
 	{
 		_tmp_path = cannonize(path);

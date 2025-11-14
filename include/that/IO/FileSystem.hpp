@@ -189,6 +189,9 @@ namespace that
 		ResultAnd<Path> cannonize(PathStringView const& path) const;
 		ResultAnd<Path> cannonize(Path const& path) const;
 
+		ResultAnd<Path> resolveAndCannonize(PathStringView const& path) const;
+		ResultAnd<Path> resolveAndCannonize(Path const& path) const;
+
 		bool isCannon(PathStringView const& path) const;
 		bool isCannon(Path const& path) const;
 
