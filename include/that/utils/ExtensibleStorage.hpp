@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <span>
 
 namespace that
 {
@@ -142,6 +143,18 @@ namespace that
 		constexpr std::vector<T, Alloc>& getStorage()
 		{
 			return _storage;
+		}
+
+		template <std::integral Int>
+		constexpr std::span<const T> getSpan(Range<Int> const& range) const
+		{
+			return std::span(data() + range.begin, range.len);
+		}
+
+		template <std::integral Int>
+		constexpr std::span<T> getSpan(Range<Int> const& range)
+		{
+			return std::span(data() + range.begin, range.len);
 		}
 	};
 
