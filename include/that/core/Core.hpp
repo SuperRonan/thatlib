@@ -8,6 +8,9 @@
 
 #define DECLARE_ENUM_VALUE_1(Name) Name,
 
+#define X_STRINGIFY(a) STRINGIFY(a)
+#define STRINGIFY(a) #a
+
 namespace that
 {
 	template <bool value>
