@@ -4,6 +4,7 @@
 #include <bit>
 #include <that/core/BasicTypes.hpp>
 #include <that/stl_ext/alignment.hpp>
+#include <that/core/Concepts.hpp>
 
 #define THAT_DECLARE_ENUM_CLASS_FLAG_OPERATOR(EnumClassName, op) \
 static constexpr EnumClassName& operator ## op ## =(EnumClassName& l, EnumClassName r) noexcept\
@@ -104,4 +105,11 @@ static constexpr EnumClassName operator ## op (EnumClassName f, Accessor a) \
 THAT_DECLARE_ENUM_CLASS_BIT_FIELD_OPERATOR(EnumClassName, ParentAccessorType, |) \
 THAT_DECLARE_ENUM_CLASS_BIT_FIELD_OPERATOR(EnumClassName, ParentAccessorType, &) \
 
-
+namespace that
+{
+	template <concepts::Enumeration E>
+	static constexpr typename std::underlying_type<E>::type ToUnderlying(E e) noexcept
+	{
+		return static_cast<typename std::underlying_type<E>::type>(e);
+	}
+}

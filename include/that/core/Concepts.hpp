@@ -44,4 +44,10 @@ namespace that
 
 	template <class T, template<class L, class R> class BinTypePred, class Head>
 	struct FirstMatch<T, BinTypePred, Head> : public std::conditional<BinTypePred<T, Head>::value, Head, void> {};
+
+	namespace concepts
+	{
+		template <class E>
+		concept Enumeration = std::is_enum<E>::value;
+	}
 }
