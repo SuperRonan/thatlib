@@ -61,4 +61,26 @@ namespace that
 			dst[i] = char_t(src[i]);
 		}
 	}
+
+	template <concepts::StringChar Char>
+	static constexpr const Char* GetRawStringPtrIFP(std::basic_string<Char> const& str)
+	{
+		const Char* res = nullptr;
+		if (!str.empty())
+		{
+			res = str.c_str();
+		}
+		return res;
+	}
+
+	template <concepts::StringChar Char>
+	static constexpr const Char* GetRawStringPtrIFP(std::basic_string_view<Char> const& str)
+	{
+		const Char* res = nullptr;
+		if (!str.empty())
+		{
+			res = str.data();
+		}
+		return res;
+	}
 }
