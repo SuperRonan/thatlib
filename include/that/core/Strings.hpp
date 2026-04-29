@@ -25,13 +25,13 @@ namespace that
 #define _THAT_STRING_CHAR_LIST char, wchar_t, char8_t, char16_t, char32_t
 
 		template <class T>
-		concept StringChar = AnyOf<typename std::remove_cvref<T>::type, std::is_same, _THAT_STRING_CHAR_LIST>;
+		concept StringChar = AnyOfBinary<typename std::remove_cvref<T>::type, std::is_same, _THAT_STRING_CHAR_LIST>;
 
 		template <class T>
 		concept RawStringPtr = std::is_pointer<T>::value && StringChar<typename std::remove_pointer<T>::type>;
 
 		template <class T>
-		concept GenericString = AnyOf<T, BasicStringLikePredictor, _THAT_STRING_CHAR_LIST>; 
+		concept GenericString = AnyOfBinary<T, BasicStringLikePredictor, _THAT_STRING_CHAR_LIST>; 
 	}
 
 	template <concepts::GenericString Str>

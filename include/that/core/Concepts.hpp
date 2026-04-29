@@ -25,10 +25,16 @@ namespace that
 		};
 
 		template <class T, template <class L, class R> class BinTypePred, class ... Args>
-		concept AnyOf = (BinTypePred<T, Args>::value || ...);
+		concept AnyOfBinary = (BinTypePred<T, Args>::value || ...);
 
 		template <class T, template <class L, class R> class BinTypePred, class ... Args>
-		concept AllOf = (BinTypePred<T, Args>::value && ...);
+		concept AllOfBinary = (BinTypePred<T, Args>::value && ...);
+
+		template <template <class T> class UnaryTypePred, class ... Args>
+		concept AllOfUnary = (UnaryTypePred<Args>::value && ...);
+
+		template <template <class T> class UnaryTypePred, class ... Args>
+		concept AnyOfUnary = (UnaryTypePred<Args>::value || ...);
 
 	}
 
