@@ -265,8 +265,9 @@ namespace that
 			}
 		}
 
+		// using dynamic_cast
 		template <std::derived_from<Base> Derived>
-		constexpr bool is() const
+		constexpr Derived* is() const
 		{
 			return dynamic_cast<Derived*>(getRaw());
 		}
@@ -277,6 +278,20 @@ namespace that
 		{
 			assert(getRaw() == nullptr || is<Derived>());
 			return static_cast<Derived*>(getRaw());
+		}
+
+		template <std::derived_from<Base> Derived>
+		constexpr _Pointer<Derived> const& reinterpretAs() const
+		{
+			assert(getRaw() == nullptr || is<Derived>());
+			return std::reinterpret_pointer_downcast<Derived>(_ptr);
+		}
+
+		template <std::derived_from<Base> Derived>
+		constexpr _Pointer<Derived>& reinterpretAs()
+		{
+			assert(getRaw() == nullptr || is<Derived>());
+			return std::reinterpret_pointer_downcast<Derived>(_ptr);
 		}
 
 		template <template <class> class OtherPointer, std::polymorphic_type OtherBase, std::derived_from<OtherBase>... OtherDerived>
