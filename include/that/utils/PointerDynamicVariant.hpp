@@ -150,13 +150,13 @@ namespace that
 
 		constexpr PointerDynamicVariant(nullptr_t) noexcept {};
 
-		template <impl::TypeInVariant<Derived...>... OtherDerived>
-		constexpr PointerDynamicVariant(PointerDynamicVariant<_Pointer, Base, OtherDerived...> const& other):
+		template <std::derived_from<Base> OtherBase, impl::TypeInVariant<Derived...>... OtherDerived>
+		constexpr PointerDynamicVariant(PointerDynamicVariant<_Pointer, OtherBase, OtherDerived...> const& other):
 			_ptr(other._ptr)
 		{}
 
-		template <impl::TypeInVariant<Derived...>... OtherDerived>
-		constexpr PointerDynamicVariant(PointerDynamicVariant<_Pointer, Base, OtherDerived...> && other) noexcept :
+		template <std::derived_from<Base> OtherBase, impl::TypeInVariant<Derived...>... OtherDerived>
+		constexpr PointerDynamicVariant(PointerDynamicVariant<_Pointer, OtherBase, OtherDerived...> && other) noexcept :
 			_ptr(std::move(other._ptr))
 		{}
 
@@ -180,15 +180,15 @@ namespace that
 			return *this;
 		};
 
-		template <impl::TypeInVariant<Derived...>... OtherDerived>
-		constexpr PointerDynamicVariant& operator=(PointerDynamicVariant<_Pointer, Base, OtherDerived...> const& other)
+		template <std::derived_from<Base> OtherBase, impl::TypeInVariant<Derived...>... OtherDerived>
+		constexpr PointerDynamicVariant& operator=(PointerDynamicVariant<_Pointer, OtherBase, OtherDerived...> const& other)
 		{
 			_ptr = other._ptr;
 			return *this;
 		}
 
-		template <impl::TypeInVariant<Derived...>... OtherDerived>
-		constexpr PointerDynamicVariant& operator=(PointerDynamicVariant<_Pointer, Base, OtherDerived...>&& other) noexcept
+		template <std::derived_from<Base> OtherBase, impl::TypeInVariant<Derived...>... OtherDerived>
+		constexpr PointerDynamicVariant& operator=(PointerDynamicVariant<_Pointer, OtherBase, OtherDerived...>&& other) noexcept
 		{
 			_ptr = std::move(other._ptr);
 			return *this;
@@ -340,6 +340,23 @@ namespace that
 		{
 			assert(that::CheckReinterpretCastSameAsStaticCast<T>(std::to_address(p)));
 			return reinterpret_cast<PointerDynamicVariant const&>(p);
+		}
+
+		static constexpr bool CheckDynamicType(Base* ptr) noexcept
+		{
+			return (impl::CheckType<Derived>(std::to_address(ptr)) || ...);
+		}
+
+		static constexpr PointerDynamicVariant DynamicCastFrom(_Pointer<Base> const& ptr) noexcept
+		{
+			if (CheckDynamicType(std::to_address(ptr)))
+			{
+				return PointerDynamicVariant(ptr);
+			}
+			else
+			{
+				return {};
+			}
 		}
 
 		// Assumes this != nullptr
