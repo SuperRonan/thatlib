@@ -40,9 +40,9 @@ namespace that
 		struct TypeIsInVariant final : public ::std::bool_constant<TypeInVariant<T, Derived...>> {};
 
 		template <class Type, class Base>
-		static constexpr bool CheckType(Base* ptr)
+		static constexpr bool CheckType(const Base* ptr)
 		{
-			return dynamic_cast<Type*>(ptr) != nullptr;
+			return dynamic_cast<const Type*>(ptr) != nullptr;
 		}
 
 		//template <class Index, class Base, class... T>
@@ -50,7 +50,7 @@ namespace that
 
 		// Assume ptr is not nullptr, and is of a type in the pack
 		template <class Head, class ...Tail, class Base, class Index=VariantIndex>
-		static constexpr Index TestIndex(Base* ptr, Index i = 0)
+		static constexpr Index TestIndex(const Base* ptr, Index i = 0)
 		{
 			if constexpr (sizeof...(Tail) == 0)
 			{
@@ -59,7 +59,7 @@ namespace that
 			}
 			else
 			{
-				if (dynamic_cast<Head*>(ptr))
+				if (dynamic_cast<const Head*>(ptr))
 				{
 					return i;
 				}
@@ -229,14 +229,14 @@ namespace that
 			return _ptr;
 		}
 
+		// Pun
 		constexpr bool checkInvariant() const noexcept
 		{
 			bool res = true;
 			if (_ptr)
 			{
-				Base* const raw = getRaw();
-				// _ptr must be of the type of at least one Derived
-				res &= ((dynamic_cast<Derived*>(raw) != nullptr) || ...);
+				// CheckInVariant
+				res &= CheckDynamicType(getRaw());
 			}
 			return res;
 		}
@@ -342,7 +342,7 @@ namespace that
 			return reinterpret_cast<PointerDynamicVariant const&>(p);
 		}
 
-		static constexpr bool CheckDynamicType(Base* ptr) noexcept
+		static constexpr bool CheckDynamicType(const Base* ptr) noexcept
 		{
 			return (impl::CheckType<Derived>(std::to_address(ptr)) || ...);
 		}
