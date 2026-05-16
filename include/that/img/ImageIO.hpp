@@ -47,7 +47,7 @@ namespace that
 			template <class T>
 			constexpr T TypeMax()noexcept
 			{
-				if constexpr (std::is_floating_point<T>::value) // Should "is_real", to include other representations (fixed)
+				if constexpr (IsFloatingPoint<T>::value) // Should "is_real", to include other representations (fixed)
 				{
 					return T(1);
 				}
@@ -58,7 +58,7 @@ namespace that
 				}
 				else if constexpr (math::Is_Vector<T>::value)
 				{
-					if constexpr (std::is_floating_point<typename T::_Type>::value)
+					if constexpr (IsFloatingPoint<typename T::_Type>::value)
 						return T(1);
 					else
 						return T(255);

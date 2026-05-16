@@ -211,9 +211,17 @@ namespace std
 		static constexpr int min_exponent10 = -4;
 	};
 
-	template <>
-	inline constexpr bool is_floating_point_v<that::math::Half> = true;
+	// std::is_floating_point cannot be extended, it marks built-in fp types
+	// half will be std::is_floating_point when it is introduced formally in the language in C++23
+	//template <>
+	//inline constexpr bool is_floating_point_v<that::math::Half> = true;
 
-	template<>
-	struct is_floating_point<that::math::Half> : public std::true_type {};
+	//template<>
+	//struct is_floating_point<that::math::Half> : public std::true_type {};
+}
+
+namespace that::impl
+{
+	template <>
+	struct IsFloatingPoint<math::Half> : std::true_type {};
 }

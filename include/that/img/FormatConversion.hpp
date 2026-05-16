@@ -8,14 +8,14 @@
 
 namespace that
 {
-	template <std::floating_point DstFloat, std::floating_point SrcFloat>
+	template <concepts::FloatingPoint DstFloat, concepts::FloatingPoint SrcFloat>
 	constexpr DstFloat ConvertFloatToFloat(SrcFloat src)
 	{
 		const DstFloat res = static_cast<DstFloat>(src);
 		return res;
 	}
 
-	template <std::floating_point DstFloat, std::integral SrcNorm>
+	template <concepts::FloatingPoint DstFloat, std::integral SrcNorm>
 	constexpr DstFloat ConvertNormToFloat(SrcNorm n)
 	{
 		const SrcNorm max = std::numeric_limits<SrcNorm>::max();
@@ -34,7 +34,7 @@ namespace that
 		}
 	}
 
-	template <std::integral DstNorm, std::floating_point SrcFloat>
+	template <std::integral DstNorm, concepts::FloatingPoint SrcFloat>
 	constexpr DstNorm ConvertFloatToNorm(SrcFloat f)
 	{
 		double d = static_cast<double>(f);
@@ -162,7 +162,7 @@ namespace that
 	}
 
 	// sRGB to linear float
-	template <std::floating_point DstFloat, std::unsigned_integral sRGB>
+	template <concepts::FloatingPoint DstFloat, std::unsigned_integral sRGB>
 	constexpr DstFloat ConvertsRGBToFloat(sRGB s)
 	{
 		using ComputeFloat = typename FloatTypePerSize<std::max<size_t>(4, sizeof(DstFloat))>::type;
@@ -173,7 +173,7 @@ namespace that
 	}
 
 	// linear float to sRGB
-	template <std::unsigned_integral sRGB, std::floating_point SrcFloat>
+	template <std::unsigned_integral sRGB, concepts::FloatingPoint SrcFloat>
 	constexpr sRGB ConvertFloatTosRGB(SrcFloat f)
 	{
 		using ComputeFloat = typename FloatTypePerSize<std::max<size_t>(4, sizeof(SrcFloat))>::type;
@@ -213,13 +213,13 @@ namespace that
 		}
 	}
 
-	template <std::integral DstInt, std::floating_point SrcFloat>
+	template <std::integral DstInt, concepts::FloatingPoint SrcFloat>
 	constexpr DstInt ConvertFloatToInt(SrcFloat f)
 	{
 		return static_cast<DstInt>(f);
 	}
 
-	template <std::floating_point DstFloat, std::integral SrcInt>
+	template <concepts::FloatingPoint DstFloat, std::integral SrcInt>
 	constexpr DstFloat ConvertIntToFloat(SrcInt i)
 	{
 		return static_cast<DstFloat>(i);

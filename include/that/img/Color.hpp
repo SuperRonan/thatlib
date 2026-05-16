@@ -11,7 +11,7 @@ namespace that
 		template <class T> 
 		constexpr T One()
 		{
-			if constexpr (std::is_floating_point<T>::value)
+			if constexpr (IsFloatingPoint<T>::value)
 				return T(1);
 			if constexpr (std::is_integral<T>::value)
 				return std::numeric_limits<T>::max();

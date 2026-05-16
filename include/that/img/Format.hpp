@@ -32,7 +32,7 @@ namespace that
 				return ElementType::SINT;
 			}
 		}
-		if (std::is_floating_point<Scalar>::value)
+		if (IsFloatingPoint<Scalar>::value)
 		{
 			return ElementType::FLOAT;
 		}

@@ -57,6 +57,24 @@ namespace that
 
 	template <size_t s>
 	using uint_st = typename UIntTypePerSize<s>::type;
+
+	namespace impl
+	{
+		// Extend this one
+		template <class T>
+		struct IsFloatingPoint : std::is_floating_point<T> {};
+	}
+
+	// that::IsFloatingPoint can be extended, (std::is_floating_point cannot)
+	// Prefer specializing the impl version
+	template <class T>
+	using IsFloatingPoint = impl::IsFloatingPoint<typename std::remove_cv<T>::type>;
+
+	namespace concepts
+	{
+		template <class T>
+		concept FloatingPoint = IsFloatingPoint<T>::value;
+	}
 }
 
 using u8 = uint8_t;
