@@ -17,7 +17,7 @@ namespace that
 		{
 		protected:
 
-			T m_data[N];
+			T m_data[N] = {};
 
 		public:
 
@@ -28,11 +28,7 @@ namespace that
 				return N;
 			}
 
-			constexpr Vector() noexcept
-			{
-				// This assumes a 0 of T is made of bytes 0
-				std::memset(m_data, 0, N * sizeof(T));
-			}
+			constexpr Vector() noexcept = default;
 
 			template <class Q, class... Args>
 			constexpr Vector(Q const& q, Args const& ... values) noexcept
@@ -54,54 +50,19 @@ namespace that
 			template <class Q>
 			constexpr Vector(Vector<N, Q> const& other) noexcept
 			{
-				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
-				{
-					std::memcpy(m_data, other.m_data, N * sizeof(T));
-				}
-				else
-				{
-					std::copy(other.cbegin(), other.cend(), begin());
-				}
+				std::copy(other.cbegin(), other.cend(), begin());
 			}
 
-			constexpr Vector(Vector const& other) noexcept
-			{
-				if constexpr (std::is_trivially_copyable<T>::value)
-				{
-					std::memcpy(m_data, other.m_data, N * sizeof(T));
-				}
-				else
-				{
-					std::copy(other.cbegin(), other.cend(), begin());
-				}
-			}
+			constexpr Vector(Vector const& other) noexcept = default;
 
 			template <class Q>
 			constexpr Vector& operator=(Vector<N, Q> const& other) noexcept
 			{
-				if constexpr (std::is_same<T, Q>::value && std::is_trivially_copyable<T>::value)
-				{
-					std::memcpy(m_data, other.m_data, N * sizeof(T));
-				}
-				else
-				{
-					std::copy(other.cbegin(), other.cend(), begin());
-				}
+				std::copy(other.cbegin(), other.cend(), begin());
 				return me;
 			}
 
-			constexpr Vector& operator=(Vector const& other) noexcept
-			{
-				if constexpr (std::is_trivially_copyable<T>::value)
-				{
-					std::memcpy(m_data, other.m_data, N * sizeof(T));
-				}
-				else
-				{
-					std::copy(other.cbegin(), other.cend(), begin());
-				}
-				return me;
-			}
+			constexpr Vector& operator=(Vector const& other) noexcept = default;
 
 			constexpr T& operator[](int i) noexcept
 			{
@@ -287,12 +248,6 @@ constexpr inline that::math::Vector<N, T> operator/(Q const& q, that::math::Vect
 {
 	that::math::Vector<N, T> left = q;
 	return left / vec;
-}
-
-namespace std
-{
-	template <int N, class T>
-	struct is_trivially_copyable < that::math::Vector < N, T >> : public is_trivially_copyable<T>::type {};
 }
 
 template <class Stream, int N, class T>

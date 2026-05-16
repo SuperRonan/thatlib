@@ -3,6 +3,8 @@
 #include <that/utils/StringMap.hpp>
 #include <that/utils/StringSet.hpp>
 
+#include <that/img/Color.hpp>
+
 namespace that
 {
 	namespace concepts
@@ -21,6 +23,14 @@ namespace that
 		static_assert(BinaryTypePredictor<BasicStringLikePredictor>);
 		static_assert(UnaryTypePredictor<std::is_pointer>);
 	}
+
+	static_assert(std::is_default_constructible<math::Vector<4, int>>::value);
+	static_assert(std::is_trivially_copyable<math::Vector<4, int>>::value);
+	static_assert(std::is_trivially_destructible<math::Vector<4, int>>::value);
+
+	static_assert(std::is_default_constructible<img::RGBA<float>>::value);
+	static_assert(std::is_trivially_copyable<img::RGBA<float>>::value);
+	static_assert(std::is_trivially_destructible<img::RGBA<float>>::value);
 
 	void f()
 	{

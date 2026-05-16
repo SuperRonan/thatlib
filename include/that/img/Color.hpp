@@ -1,6 +1,7 @@
 #pragma once
 
 #include <that/math/Vector.hpp>
+#include <that/core/BasicTypes.hpp>
 #include <type_traits>
 #include <limits>
 
@@ -31,31 +32,28 @@ namespace that
 		template <class T>
 		struct RGBA
 		{
-			RGB<T> rgb;
-			T a;
+			RGB<T> rgb = {};
+			T a = {};
 
 			using _Type = T;
 
-			constexpr RGBA(RGBA const& other) = default;
+			constexpr RGBA() noexcept = default;
 
-			constexpr RGBA(T const& r = 0, T const& g = 0, T const& b = 0, T const& a = One<T>()) :
+			constexpr RGBA(RGBA const& other) noexcept = default;
+
+			constexpr RGBA(T const& r, T const& g = 0, T const& b = 0, T const& a = One<T>()) noexcept :
 				rgb(r, g, b),
 				a(a)
 			{}
 
-			constexpr RGBA(RGB<T> const& rgb, T const& a = One<T>()) : 
+			constexpr RGBA(RGB<T> const& rgb, T const& a = One<T>()) noexcept : 
 				rgb(rgb),
 				a(a)
 			{}
 
-			constexpr RGBA operator=(RGBA const& other)
-			{
-				rgb = other.rgb;
-				a = other.a;
-				return *this;
-			}
+			constexpr RGBA& operator=(RGBA const& other) noexcept = default;
 
-			constexpr RGBA operator=(RGB<T> const& other)
+			constexpr RGBA& operator=(RGB<T> const& other) noexcept
 			{
 				rgb = other;
 				a = One<T>();
@@ -92,9 +90,3 @@ namespace that
 		class is_Grey<Grey<T>> : public std::true_type {};
 	}
 }
-
-namespace std
-{
-	template <class T>
-	class is_trivially_copyable<that::img::RGBA<T>> : public is_trivially_copyable<T>::type {};
-};
