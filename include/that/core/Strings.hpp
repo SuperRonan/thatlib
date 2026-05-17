@@ -35,7 +35,7 @@ namespace that
 	}
 
 	template <concepts::GenericString Str>
-	using GenericStringCharType = FirstMatch<Str, concepts::BasicStringLikePredictor, _THAT_STRING_CHAR_LIST>::type;
+	using GenericStringCharType = FirstMatch2<Str, concepts::BasicStringLikePredictor, _THAT_STRING_CHAR_LIST>::type;
 
 	template <concepts::GenericString Str>
 	constexpr size_t GetGenericStringSize(Str const& str)

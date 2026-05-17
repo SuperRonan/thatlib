@@ -38,18 +38,31 @@ namespace that
 
 	}
 
-	template <class T, template<class L, class R> class BinTypePred, class ... Args>
-	struct FirstMatch;
+	template <template <class T> class UnaryTypePred, class ...Args>
+	struct FirstMatch1;
 
-	template <class T, template<class L, class R> class BinTypePred, class Head, class ... Tail>
-	struct FirstMatch<T, BinTypePred, Head, Tail...> : public std::conditional<
-		BinTypePred<T, Head>::value,
+	template <template <class T> class UnaryTypePred, class Head, class ...Tail>
+	struct FirstMatch1<UnaryTypePred, Head, Tail...> : std::conditional<
+		UnaryTypePred<Head>::value,
 		Head,
-		typename FirstMatch<T, BinTypePred, Tail...>::type
-	> {};
+		typename FirstMatch1<UnaryTypePred, Tail...>::type
+	>{};
 
-	template <class T, template<class L, class R> class BinTypePred, class Head>
-	struct FirstMatch<T, BinTypePred, Head> : public std::conditional<BinTypePred<T, Head>::value, Head, void> {};
+	template <template <class T> class UnaryTypePred, class Tail>
+	struct FirstMatch1<UnaryTypePred, Tail> : std::conditional<UnaryTypePred<Tail>::value, Tail, void> {};
+
+	template <class T, template <class L, class R> class BinTypePred>
+	struct UnaryTypePredFromBinary
+	{
+		template <class RHS>
+		using PredL = BinTypePred<T, RHS>;
+
+		template <class LHS>
+		using PredR = BinTypePred<LHS, T>;
+	};
+
+	template <class T, template<class L, class R> class BinTypePred, class ... Args>
+	using FirstMatch2 = FirstMatch1<UnaryTypePredFromBinary<T, BinTypePred>::template PredL, Args...>;
 
 	namespace concepts
 	{
