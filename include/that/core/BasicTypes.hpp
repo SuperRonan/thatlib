@@ -2,12 +2,16 @@
 
 #include <type_traits>
 #include <cstdint>
+#include <limits>
+#include <concepts>
+
+#include <that/core/Concepts.hpp>
 
 //#include <stdfloat>
 
 namespace that
 {
-	template <size_t s>
+	template <size_t size_of>
 	struct FloatTypePerSize : public std::type_identity<void> {};
 
 	template <>
@@ -16,7 +20,7 @@ namespace that
 	template <>
 	struct FloatTypePerSize<sizeof(double)> : public std::type_identity<double> {};
 
-	template <size_t s>
+	template <size_t size_of>
 	struct IntTypePerSize : public std::type_identity<void> {};
 
 	template <>
@@ -31,7 +35,7 @@ namespace that
 	template <>
 	struct IntTypePerSize<sizeof(int64_t)> : public std::type_identity<int64_t> {};
 
-	template <size_t s>
+	template <size_t size_of>
 	struct UIntTypePerSize : public std::type_identity<void> {};
 
 	template <>
@@ -45,6 +49,36 @@ namespace that
 
 	template <>
 	struct UIntTypePerSize<sizeof(uint64_t)> : public std::type_identity<uint64_t> {};
+
+	template <std::integral Int, bool Signed>
+	using IntWithSign_t = std::conditional<Signed, typename std::make_signed<Int>::type, typename std::make_unsigned<Int>::type>::type;
+
+	template <std::integral Int, IntWithSign_t<size_t, std::signed_integral<Int>> Value>
+	static consteval bool CanHoldValue()
+	{
+		using SZ = IntWithSign_t<size_t, std::signed_integral<Int>>;
+		using limits = std::numeric_limits<Int>;
+		return Value >= static_cast<SZ>(limits::min()) && Value <= static_cast<SZ>(limits::max());
+	}
+
+	namespace impl
+	{
+		template <size_t MaxValueIncluded>
+		struct CanHoldValueWrapper
+		{
+			template <std::integral Int>
+			using Pred = std::bool_constant<CanHoldValue<Int, MaxValueIncluded>()>;
+		};
+	}
+
+	template<size_t MaxValueIncluded>
+	using BigEnoughUInt = FirstMatch1<impl::CanHoldValueWrapper<MaxValueIncluded>::template Pred,
+		uint8_t,
+		uint16_t,
+		uint32_t,
+		uint64_t
+	>;
+
 
 	template <size_t s>
 	using float_st = typename FloatTypePerSize<s>::type;

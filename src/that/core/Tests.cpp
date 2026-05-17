@@ -3,6 +3,8 @@
 #include <that/utils/StringMap.hpp>
 #include <that/utils/StringSet.hpp>
 
+#include <that/core/BasicTypes.hpp>
+
 #include <that/img/Color.hpp>
 
 namespace that
@@ -35,10 +37,16 @@ namespace that
 	void f()
 	{
 		std::string str;
+		static_assert(concepts::BasicStringLike<decltype(str), char> == true);
 		GetGenericStringSize(str);
 
 		StringSet<char> set;
 		set.insert("abc");
+
+		static_assert(std::same_as<BigEnoughUInt<196>::type, u8>);
+		static_assert(std::same_as<BigEnoughUInt<5000>::type, u16>);
+		static_assert(std::same_as<BigEnoughUInt<50'000'000>::type, u32>);
+		static_assert(std::same_as<BigEnoughUInt<4'000'000'000'000'000>::type, u64>);
 	}
 
 	static constexpr const size_t N = GetGenericStringSize("abc");

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <stdint.h>
+#include <that/core/BasicTypes.hpp>
+#include <algorithm>
 
 namespace that
 {
@@ -68,9 +69,9 @@ namespace that
 		}
 	};
 
-	using Range32u = Range<uint32_t>;
-	using Range64u = Range<uint64_t>;
-	using Range32i = Range<int32_t>;
-	using Range64i = Range<int64_t>;
+	using Range32u = Range<u32>;
+	using Range64u = Range<u64>;
+	using Range32i = Range<i32>;
+	using Range64i = Range<i64>;
 	using Range_st = Range<size_t>;
 }
