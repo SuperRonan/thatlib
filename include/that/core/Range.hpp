@@ -12,21 +12,38 @@ namespace that
 		Index begin = 0;
 		Index len = 0;
 
+		static constinit const Index NPos = Index(-1);
+
 		template <class Q>
 		constexpr bool operator==(Range<Q> const& o) const
 		{
 			return begin == o.begin && len == o.len;
 		}
 
-		constexpr bool contains(Index i) const
+		constexpr bool containsRelaxed(Index i) const
+		{
+			return i >= begin && i <= (begin + len);
+		}
+
+		constexpr bool containsStict(Index i) const
 		{
 			return i >= begin && i < (begin + len);
+		}
+
+		constexpr bool contains(Index i) const
+		{
+			return containsStict(i);
 		}
 
 		template <class Q>
 		constexpr bool contains(Range<Q> const& r) const
 		{
 			return r.begin >= begin && r.end() <= end();
+		}
+
+		constexpr Index clamp(Index index) const
+		{
+			return std::clamp(index, begin, end() - 1);
 		}
 
 		constexpr Index end()const
@@ -66,6 +83,16 @@ namespace that
 			Range res = *this;
 			res |= u;
 			return res;
+		}
+
+		template <class OtherInt>
+			requires std::convertible_to<Index, OtherInt>
+		constexpr Range<OtherInt> staticCastTo() const
+		{
+			return Range<OtherInt>{
+				.begin = static_cast<OtherInt>(begin),
+				.len = static_cast<OtherInt>(len),
+			};
 		}
 	};
 
