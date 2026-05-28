@@ -131,6 +131,8 @@ using sint16_t = int16_t;
 using sint32_t = int32_t;
 using sint64_t = int64_t;
 
+using uchar = unsigned char;
+using schar = signed char;
 using ushort = unsigned short;
 using sshort = signed short;
 using uint = unsigned int;
