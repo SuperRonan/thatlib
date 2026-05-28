@@ -186,6 +186,49 @@ namespace that
 
 				return res;
 			}
+
+			// Basic operators implementation emulated using regular floats
+			// Work in finite cases (not tested how it behaves in edge cases (int, NaN, subnormal, ...)
+			// You should not use these in performance critical sections, do the computation using regular floats instead (see FloatingPointCompute)
+			// TODO maybe implement this with intrinsics if available.
+#define HALF_ARITHMETIC_OPERATOR(OP) \
+			constexpr Half& operator##OP##=(Half rhs) noexcept \
+			{ \
+				float f = *this; \
+				float g = rhs; \
+				f OP##= g; \
+				*this = f; \
+				return *this; \
+			} \
+			constexpr Half operator##OP(Half rhs) const noexcept \
+			{ \
+				float f = *this; \
+				float g = rhs; \
+				float resf = f OP g; \
+				Half res = resf; \
+				return res; \
+			}
+
+			HALF_ARITHMETIC_OPERATOR(+)
+			HALF_ARITHMETIC_OPERATOR(-)
+			HALF_ARITHMETIC_OPERATOR(*)
+			HALF_ARITHMETIC_OPERATOR(/)
+
+#undef HALF_ARITHMETIC_OPERATOR
+
+			constexpr Half operator-() const noexcept
+			{
+				Half res = *this;
+				res._data ^= SignMask16();
+				return res;
+			}
+
+			constexpr std::partial_ordering operator<=>(Half rhs) const noexcept
+			{
+				float f = *this;
+				float g = rhs;
+				return f <=> g;
+			}
 		};
 
 		using float16_t = Half;
@@ -220,8 +263,24 @@ namespace std
 	//struct is_floating_point<that::math::Half> : public std::true_type {};
 }
 
-namespace that::impl
+namespace that
 {
+	namespace impl
+	{
+		template <>
+		struct IsFloatingPoint<math::Half> : std::true_type {};
+	}
+
 	template <>
-	struct IsFloatingPoint<math::Half> : std::true_type {};
+	struct FloatingPointCompute<math::Half> : std::type_identity<float> {};
 }
+
+#if __STDCPP_FLOAT16_T__
+
+#else
+using f16 = that::math::float16_t;
+using float16_t = f16;
+#endif
+
+// float16_t is emulated using float32_t for operations
+#define FLOAT_16_IS_NATIVE 0

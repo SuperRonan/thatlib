@@ -7,6 +7,8 @@
 
 #include <that/img/Color.hpp>
 
+#include <that/math/Half.hpp>
+
 namespace that
 {
 	namespace concepts
@@ -47,7 +49,20 @@ namespace that
 		static_assert(std::same_as<BigEnoughUInt<5000>::type, u16>);
 		static_assert(std::same_as<BigEnoughUInt<50'000'000>::type, u32>);
 		static_assert(std::same_as<BigEnoughUInt<4'000'000'000'000'000>::type, u64>);
+
+		{
+			constexpr f16 a = 12;
+			constexpr f16 b = -9;
+			constexpr f16 c = a + b;
+			constexpr f16 d = a * c;
+			constexpr f32 e = c;
+			constexpr f32 f = d;
+		}
 	}
 
 	static constexpr const size_t N = GetGenericStringSize("abc");
+	static_assert(N == 3);
+
+	static_assert(sizeof(f32) == 4);
+	static_assert(sizeof(f64) == 8);
 }

@@ -109,6 +109,12 @@ namespace that
 		template <class T>
 		concept FloatingPoint = IsFloatingPoint<T>::value;
 	}
+
+	template <concepts::FloatingPoint Float>
+	struct FloatingPointCompute : std::type_identity<Float> {};
+
+	template <concepts::FloatingPoint Float>
+	using FloatingPointComputeType = typename FloatingPointCompute<Float>::Type;
 }
 
 using u8 = uint8_t;
@@ -143,8 +149,21 @@ using ullong = unsigned long long;
 using sllong = signed long long;
 
 // TODO with C++ 23 fixed float types (when made available by the compile (hopefully sometime b4 C++ 26 releases))
+#if __STDCPP_FLOAT16_T__
+using f16 = float16_t;
+#else
+// include half
+#endif
+#if __STDCPP_FLOAT32_T__
+using f32 = std::float32_t;
+#else
 using f32 = float;
+#endif
+#if __STDCPP_FLOAT64_T__
+using f64 = std::float64_t;
+#else
 using f64 = double;
+#endif
 
 using float32_t = f32;
 using float64_t = f64;
