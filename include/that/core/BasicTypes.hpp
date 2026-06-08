@@ -167,3 +167,25 @@ using f64 = double;
 
 using float32_t = f32;
 using float64_t = f64;
+
+
+namespace std
+{
+	// Given a native type, get the signed version of it
+	// std::make_signed only works on native integral (and cannot be extended),
+	// std::signed_type also works with floats, and eventualy other user defined types
+	template <class T>
+	struct signed_type;
+
+	template <std::integral I>
+	struct signed_type<I> : std::make_signed<I> {};
+
+	template <that::concepts::FloatingPoint F>
+	struct signed_type<F> : std::type_identity<F> {};
+
+	template <class T>
+	using signed_type_t = typename signed_type<T>::type;
+	
+	template <class T>
+	concept arithmetic = is_arithmetic<T>::value;
+}
