@@ -36,6 +36,15 @@ namespace that
 	static_assert(std::is_trivially_copyable<img::RGBA<float>>::value);
 	static_assert(std::is_trivially_destructible<img::RGBA<float>>::value);
 
+	template <std::unsigned_integral UInt>
+	static consteval bool CheckUIntType()
+	{
+		using Limits = std::numeric_limits<UInt>;
+		constexpr bool res1 = std::same_as<typename BigEnoughUInt<Limits::max()>::type, UInt>;
+		static_assert(res1);
+		return res1;
+	}
+
 	void f()
 	{
 		std::string str;
@@ -44,11 +53,22 @@ namespace that
 
 		StringSet<char> set;
 		set.insert("abc");
-
+		constexpr const size_t B0 = impl::RequireBytesPo2<0>();
+		constexpr const size_t B1 = impl::RequireBytesPo2<1>();
+		constexpr const size_t B4M = impl::RequireBytesPo2<4'000'000>();
+		constexpr const size_t B4_15 = impl::RequireBytesPo2<4'000'000'000'000'000>();
+		static_assert(std::same_as<BigEnoughUInt<0>::type, u8>);
+		static_assert(std::same_as<BigEnoughUInt<1>::type, u8>);
 		static_assert(std::same_as<BigEnoughUInt<196>::type, u8>);
 		static_assert(std::same_as<BigEnoughUInt<5000>::type, u16>);
+		static_assert(std::same_as<BigEnoughUInt<4'000'000>::type, u32>);
 		static_assert(std::same_as<BigEnoughUInt<50'000'000>::type, u32>);
 		static_assert(std::same_as<BigEnoughUInt<4'000'000'000'000'000>::type, u64>);
+
+		static_assert(CheckUIntType<u8>());
+		static_assert(CheckUIntType<u16>());
+		static_assert(CheckUIntType<u32>());
+		static_assert(CheckUIntType<u64>());
 
 		{
 			constexpr f16 a = 12;

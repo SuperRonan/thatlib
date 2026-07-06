@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <concepts>
+#include <bit>
 
 #include <that/core/Concepts.hpp>
 
@@ -53,8 +54,8 @@ namespace that
 	template <std::integral Int, bool Signed>
 	using IntWithSign_t = std::conditional<Signed, typename std::make_signed<Int>::type, typename std::make_unsigned<Int>::type>::type;
 
-	template <std::integral Int, IntWithSign_t<size_t, std::signed_integral<Int>> Value>
-	static consteval bool CanHoldValue()
+	template <std::integral Int>
+	static constexpr bool CanHoldValue(IntWithSign_t<size_t, std::signed_integral<Int>> Value)
 	{
 		using SZ = IntWithSign_t<size_t, std::signed_integral<Int>>;
 		using limits = std::numeric_limits<Int>;
@@ -63,21 +64,21 @@ namespace that
 
 	namespace impl
 	{
-		template <size_t MaxValueIncluded>
-		struct CanHoldValueWrapper
+		template<uintmax_t MaxValueIncluded>
+		static consteval size_t RequiredBytes()
 		{
-			template <std::integral Int>
-			using Pred = std::bool_constant<CanHoldValue<Int, MaxValueIncluded>()>;
-		};
-	}
+			// Use ternary to avoid including <algorithms> for std::max
+			return MaxValueIncluded == 0 ? 1 : (std::bit_width(MaxValueIncluded) + 7) / 8;
+		}
 
-	template<size_t MaxValueIncluded>
-	using BigEnoughUInt = FirstMatch1<impl::CanHoldValueWrapper<MaxValueIncluded>::template Pred,
-		uint8_t,
-		uint16_t,
-		uint32_t,
-		uint64_t
-	>;
+		template<uintmax_t MaxValueIncluded>
+		static consteval size_t RequireBytesPo2()
+		{
+			return std::bit_ceil(impl::RequiredBytes<MaxValueIncluded>());
+		}
+	}
+	template<uintmax_t MaxValueIncluded>
+	using BigEnoughUInt = UIntTypePerSize<impl::RequireBytesPo2<MaxValueIncluded>()>;
 
 
 	template <size_t s>
