@@ -5,6 +5,18 @@
 
 namespace that
 {
+	template <class C, bool Const>
+	struct ReferenceConstOrRValue : std::conditional<Const, C const&, C&&>{};
+
+	template <class C, bool Const>
+	using ReferenceConstOrRValue_t = typename ReferenceConstOrRValue<C, Const>::type;
+
+	template <class C, bool Const>
+	struct OptConst : std::conditional<Const, const C, C>{};
+
+	template <class C, bool Const>
+	using OptConst_t = typename OptConst<C, Const>::type;
+
 	namespace concepts
 	{
 		template <class Candidate, class Type>
