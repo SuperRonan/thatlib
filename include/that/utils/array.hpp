@@ -2,9 +2,9 @@
 
 #include <array>
 
-namespace std
+namespace that
 {
-	template <class T, size_t N>
+	template <size_t N, class T>
 	static constexpr std::array<T, N> MakeUniformArray(T const& v)
 	{
 		std::array<T, N> res;
