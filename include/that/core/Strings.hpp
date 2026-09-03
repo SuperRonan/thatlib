@@ -35,7 +35,27 @@ namespace that
 	}
 
 	template <concepts::GenericString Str>
-	using GenericStringCharType = FirstMatch2<Str, concepts::BasicStringLikePredictor, _THAT_STRING_CHAR_LIST>::type;
+	using GenericStringCharType = FirstMatch2<Str, concepts::BasicStringLikePredictor, _THAT_STRING_CHAR_LIST>;
+
+	template <concepts::GenericString Str>
+	using GenericStringChar_t = typename GenericStringCharType<Str>::type;
+
+	// string_view(const char* str = nullptr) is UB or forbiden
+	// This funciton checks this case and returns an empty string_view
+	template <concepts::GenericString Str>
+	constexpr auto StringViewMaybeNull(Str const& str)
+	{
+		using CharType = GenericStringChar_t<Str>;
+		using Res = std::basic_string_view<CharType>;
+		if constexpr (concepts::RawStringPtr<Str>)
+		{
+			if (str == nullptr)
+			{
+				return Res{};
+			}
+		}
+		return Res(str);
+	}
 
 	template <concepts::GenericString Str>
 	constexpr size_t GetGenericStringSize(Str const& str)
@@ -46,7 +66,7 @@ namespace that
 		//}
 		//else
 		{
-			using char_t = GenericStringCharType<Str>;
+			using char_t = GenericStringChar_t<Str>;
 			const std::basic_string_view<char_t> sv = str;
 			return sv.size();
 		}
