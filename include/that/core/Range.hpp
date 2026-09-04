@@ -94,6 +94,18 @@ namespace that
 				.len = static_cast<OtherInt>(len),
 			};
 		}
+
+		// Bitwise equality, does not check for NPos
+		constexpr bool operator==(Range const& rhs) const noexcept
+		{
+			return begin == rhs.begin && len == rhs.len;
+		}
+
+		// Bitwise equality, does not check for NPos
+		constexpr bool operator!=(Range const& rhs) const noexcept
+		{
+			return begin != rhs.begin || len != rhs.len;
+		}
 	};
 
 	using Range32u = Range<u32>;
