@@ -11,6 +11,8 @@
 #define X_STRINGIFY(a) STRINGIFY(a)
 #define STRINGIFY(a) #a
 
+#define DECLARE_STRINGIFIED(X) DECLARE_ENUM_VALUE_1(STRINGIFY(X))
+
 namespace that
 {
 	template <bool value>
