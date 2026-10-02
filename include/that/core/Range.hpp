@@ -106,6 +106,19 @@ namespace that
 		{
 			return begin != rhs.begin || len != rhs.len;
 		}
+
+		// Set begin while keeping the end()
+		void setBegin(Index new_begin)
+		{
+			len += (begin - new_begin);
+			begin = new_begin;
+		}
+
+		// Set end while keeping the begin
+		void setEnd(Index new_end)
+		{
+			len = new_end - begin;
+		}
 	};
 
 	using Range32u = Range<u32>;
