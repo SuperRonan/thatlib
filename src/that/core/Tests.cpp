@@ -36,6 +36,13 @@ namespace that
 	static_assert(std::is_trivially_copyable<img::RGBA<float>>::value);
 	static_assert(std::is_trivially_destructible<img::RGBA<float>>::value);
 
+	static_assert(impl::ScalarCategoryOf_v<int> == impl::ScalarCategory::Integral);
+	static_assert(impl::ScalarCategoryOf_v<size_t> == impl::ScalarCategory::Integral);
+	static_assert(impl::ScalarCategoryOf_v<float> == impl::ScalarCategory::Float);
+	static_assert(impl::ScalarCategoryOf_v<float*> == impl::ScalarCategory::Pointer);
+	static_assert(impl::SameCategory_v<int, size_t> == true);
+	static_assert(impl::SameCategory_v<u16, double> == false);
+
 	template <std::unsigned_integral UInt>
 	static consteval bool CheckUIntType()
 	{

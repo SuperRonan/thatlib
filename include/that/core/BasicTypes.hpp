@@ -10,6 +10,15 @@
 
 //#include <stdfloat>
 
+namespace std
+{
+	template <class T>
+	concept arithmetic = is_arithmetic<T>::value;
+
+	template <class T>
+	concept scalar = is_scalar<T>::value;
+}
+
 namespace that
 {
 	template <size_t size_of>
@@ -116,6 +125,98 @@ namespace that
 
 	template <concepts::FloatingPoint Float>
 	using FloatingPointComputeType = typename FloatingPointCompute<Float>::Type;
+
+	namespace impl
+	{
+		enum class ScalarCategory
+		{
+			Integral = 0x1 << 0,
+			Float    = 0x1 << 1,
+			Enum     = 0x1 << 2,
+			Bool     = 0x1 << 3,
+			Pointer  = 0x1 << 4,
+			Unknown  = 0x1 << 5,
+		};
+
+		template<ScalarCategory A, ScalarCategory B>
+		static consteval bool SameCategory()
+		{
+			return (A == B) && (A != ScalarCategory::Unknown);
+		}
+
+		
+
+		template <ScalarCategory C>
+		using ScalarCategoryConstant = std::integral_constant<ScalarCategory, C>;
+
+		template <std::scalar T>
+		struct ScalarCategoryOf : ScalarCategoryConstant<ScalarCategory::Unknown>{};
+
+		template <>
+		struct ScalarCategoryOf<bool> : ScalarCategoryConstant<ScalarCategory::Bool>{};
+
+		template <std::integral I>
+		struct ScalarCategoryOf<I> : ScalarCategoryConstant<ScalarCategory::Integral>{};
+
+		template <concepts::FloatingPoint F>
+		struct ScalarCategoryOf<F> : ScalarCategoryConstant<ScalarCategory::Float> {};
+
+		template <concepts::Enumeration E>
+		struct ScalarCategoryOf<E> : ScalarCategoryConstant<ScalarCategory::Enum> {};
+
+		template <class T>
+		struct ScalarCategoryOf<T*> : ScalarCategoryConstant<ScalarCategory::Pointer> {};
+
+		template <std::scalar T>
+		constexpr ScalarCategory ScalarCategoryOf_v = ScalarCategoryOf<T>::value;
+
+		template <std::scalar A, std::scalar B>
+		using SameCategoryT = std::bool_constant<
+			SameCategory<
+				ScalarCategoryOf<A>::value,
+				ScalarCategoryOf<B>::value
+			>()
+		>;
+
+		template <std::scalar A, std::scalar B>
+		constexpr bool SameCategory_v = SameCategory<
+			ScalarCategoryOf<A>::value,
+			ScalarCategoryOf<B>::value
+		>();
+	}
+
+	// Given a native type, get the signed version of it
+	// std::make_signed only works on native integral (and cannot be extended),
+	// SignedType is extendable (to floats, and eventualy other user defined types)
+	template <class T>
+	struct SignedType;
+
+	template <std::integral I>
+	struct SignedType<I> : std::make_signed<I> {};
+
+	template <concepts::FloatingPoint F>
+	struct SignedType<F> : std::type_identity<F> {};
+
+	template <class T>
+	using SignedType_t = typename SignedType<T>::type;
+
+	template <class T>
+	struct IsSigned;
+
+	template <std::integral I>
+	struct IsSigned<I> : std::bool_constant<std::is_signed<I>::value>{};
+
+	template <concepts::FloatingPoint F>
+	struct IsSigned<F> : std::true_type {};
+
+	template <class T>
+	constexpr bool IsSigned_v = IsSigned<T>::value;
+
+	template <std::integral To, std::integral From>
+	using IntegralConversionExplicit = std::bool_constant<(sizeof(From) > sizeof(To)) || (std::is_signed<To>::value != std::is_signed<From>::value)>;
+
+	template <std::arithmetic To, std::arithmetic From>
+	using ScalarConversionExplicit = std::bool_constant<(!impl::SameCategory_v<From, To>) || (sizeof(From) > sizeof(To)) || (IsSigned<To>::value != IsSigned<From>::value)>;
 }
 
 using u8 = uint8_t;
@@ -169,24 +270,3 @@ using f64 = double;
 using float32_t = f32;
 using float64_t = f64;
 
-
-namespace std
-{
-	// Given a native type, get the signed version of it
-	// std::make_signed only works on native integral (and cannot be extended),
-	// std::signed_type also works with floats, and eventualy other user defined types
-	template <class T>
-	struct signed_type;
-
-	template <std::integral I>
-	struct signed_type<I> : std::make_signed<I> {};
-
-	template <that::concepts::FloatingPoint F>
-	struct signed_type<F> : std::type_identity<F> {};
-
-	template <class T>
-	using signed_type_t = typename signed_type<T>::type;
-	
-	template <class T>
-	concept arithmetic = is_arithmetic<T>::value;
-}
