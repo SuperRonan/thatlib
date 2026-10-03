@@ -5,12 +5,28 @@
 
 namespace that
 {
-	template <class UInt>
+	template <std::integral UInt>
 	struct Range
 	{
 		using Index = UInt;
 		Index begin = 0;
 		Index len = 0;
+
+		template <std::integral Other>
+		constexpr Range<Other> cast() const noexcept
+		{
+			Range<Other>{
+				.begin = static_cast<Other>(begin),
+				.len = static_cast<Other>(len),
+			};
+		}
+
+		template <std::integral Other>
+		explicit(IntegralConversionExplicit<Other, Index>::value)
+		constexpr operator Range<Other>()
+		{
+			return cast<Other>();
+		}
 
 		static constinit const Index NPos = Index(-1);
 
