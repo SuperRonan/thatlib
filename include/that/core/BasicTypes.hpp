@@ -60,8 +60,20 @@ namespace that
 	template <>
 	struct UIntTypePerSize<sizeof(uint64_t)> : public std::type_identity<uint64_t> {};
 
+	template <size_t size_of, bool Signed = false>
+	struct IntegralTypeOf : UIntTypePerSize<size_of> {};
+
+	template <size_t size_of>
+	struct IntegralTypeOf<size_of, true> : IntTypePerSize<size_of> {};
+
+	template <size_t size_of, bool Signed = false>
+	using IntegralTypeOf_t = typename IntegralTypeOf<size_of, Signed>::type;
+
 	template <std::integral Int, bool Signed>
-	using IntWithSign_t = std::conditional<Signed, typename std::make_signed<Int>::type, typename std::make_unsigned<Int>::type>::type;
+	using IntWithSign = std::conditional<Signed, typename std::make_signed<Int>::type, typename std::make_unsigned<Int>::type>;
+
+	template <std::integral Int, bool Signed>
+	using IntWithSign_t = typename IntWithSign<Int, Signed>::type;
 
 	template <std::integral Int>
 	static constexpr bool CanHoldValue(IntWithSign_t<size_t, std::signed_integral<Int>> Value)
@@ -89,6 +101,25 @@ namespace that
 	template<uintmax_t MaxValueIncluded>
 	using BigEnoughUInt = UIntTypePerSize<impl::RequireBytesPo2<MaxValueIncluded>()>;
 
+	template <std::integral Int>
+	using WiderIntIFP = std::conditional<
+		(sizeof(Int) < sizeof(intmax_t)), // Most vexing );
+		typename IntegralTypeOf<sizeof(Int) * 2, std::is_signed<Int>::value>::type,
+		Int
+	>;
+
+	template <std::integral Int>
+	using WiderIntIFP_t = typename WiderIntIFP<Int>::type;
+
+	template <std::integral Int>
+	using NarrowerIntIFP = std::conditional<
+		(sizeof(Int) > sizeof(int8_t)), // Most vexing );
+		typename IntegralTypeOf<sizeof(Int) / 2, std::is_signed<Int>::value>::type,
+		Int
+	>;
+
+	template <std::integral Int>
+	using NarrowerIntIFP_t = typename NarrowerIntIFP<Int>::type;
 
 	template <size_t s>
 	using float_st = typename FloatTypePerSize<s>::type;

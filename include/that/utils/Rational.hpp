@@ -79,6 +79,16 @@ namespace that
 			return cast<OtherInt>();
 		}
 
+		constexpr Rational<WiderIntIFP_t<Integral>> wider() const
+		{
+			return cast<WiderIntIFP_t<Integral>>();
+		}
+
+		constexpr Rational<NarrowerIntIFP_t<Integral>> narrower() const
+		{
+			return cast<NarrowerIntIFP_t<Integral>>();
+		}
+
 		// Should not be UB because neg value casted to unsigned type
 		constexpr Denominator absNumerator() const
 		{

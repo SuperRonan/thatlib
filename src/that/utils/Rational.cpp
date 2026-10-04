@@ -65,7 +65,7 @@ namespace that
 				constexpr Ri8 a(5, 4);
 				constexpr Ri8 b(9, 47);
 				constexpr Ri8 s = a + b;
-				constexpr auto s2 = a.cast<i64>() + b.cast<i64>();
+				constexpr Rational<i16> s2 = a.wider() + b.wider();
 			}
 		}
 	}

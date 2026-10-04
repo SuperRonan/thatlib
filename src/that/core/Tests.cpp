@@ -43,6 +43,24 @@ namespace that
 	static_assert(impl::SameCategory_v<int, size_t> == true);
 	static_assert(impl::SameCategory_v<u16, double> == false);
 
+	static_assert(std::same_as<that::WiderIntIFP_t<i8>, i16>);
+	static_assert(std::same_as<that::WiderIntIFP_t<u8>, u16>);
+	static_assert(std::same_as<that::WiderIntIFP_t<i16>, i32>);
+	static_assert(std::same_as<that::WiderIntIFP_t<u16>, u32>);
+	static_assert(std::same_as<that::WiderIntIFP_t<i32>, i64>);
+	static_assert(std::same_as<that::WiderIntIFP_t<u32>, u64>);
+	static_assert(std::same_as<that::WiderIntIFP_t<intmax_t>, intmax_t>);
+	static_assert(std::same_as<that::WiderIntIFP_t<uintmax_t>, uintmax_t>);
+
+	static_assert(std::same_as<that::NarrowerIntIFP_t<i8>, i8>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<u8>, u8>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<i32>, i16>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<u32>, u16>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<i64>, i32>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<u64>, u32>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<i64>, i32>);
+	static_assert(std::same_as<that::NarrowerIntIFP_t<u64>, u32>);
+
 	template <std::unsigned_integral UInt>
 	static consteval bool CheckUIntType()
 	{
