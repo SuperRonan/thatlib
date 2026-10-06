@@ -3,10 +3,58 @@
 #include <that/core/BasicTypes.hpp>
 #include <limits>
 #include <array>
+#include <cmath>
 #include <that/core/Range.hpp>
 
 namespace that
 {
+	template <class A>
+	static inline A NextAfter(A from, A to);
+
+	template <that::concepts::FloatingPoint F>
+	static inline F NextAfter(F from, F to)
+	{
+		return std::nextafter(from, to);
+	}
+
+	template <std::signed_integral I>
+	static constexpr I Normalize(std::strong_ordering s_o)
+	{
+		// std::strong_ordering is typically represented by an i8 as -1, 0 or 1, but the standard does not guaranties it!
+		// The compiler should be able to NOP this
+		if(s_o == std::strong_ordering::less) return I(-1);
+		else if(s_o == std::strong_ordering::equal) return I(0);
+		else //if(s_o == std::strong_ordering::greater) 
+			return I(1);
+	}
+
+	template <std::integral I>
+	static constexpr I NextAfterI(I from, I to)
+	{
+		using SI = typename std::make_signed<I>::type;
+		const std::strong_ordering diff = to <=> from;
+		const SI idiff = Normalize<SI>(diff);
+		return from + idiff;
+	}
+
+	template <std::integral I>
+	static inline I NextAfter(I from, I to)
+	{
+		return NextAfterI(from, to);
+	}
+
+	template<std::arithmetic A>
+	static inline A NextAfter(A a)
+	{
+		return NextAfter(a, std::numeric_limits<A>::max());
+	}
+
+	template<std::arithmetic A>
+	static inline A PreviousBefore(A a)
+	{
+		return NextAfter(a, std::numeric_limits<A>::lowest());
+	}
+
 	namespace impl
 	{
 		struct SegmentBase
@@ -238,6 +286,17 @@ namespace that
 				*this = Segment(EmptyTag{});
 			}
 			return *this;
+		}
+
+		static bool CanMerge(T lhs_upper, T rhs_lower)
+		{
+			return lhs_upper >= rhs_lower || NextAfter(lhs_upper, rhs_lower) == rhs_lower;
+		}
+
+		Segment widenToAdjacent(bool widen_lower = true, bool widen_upper = true) const
+		{
+			Segment res(widen_lower ? PreviousBefore(lower()) : lower(), widen_upper ? NextAfter(upper()) : upper());
+			return res;
 		}
 	};
 }
