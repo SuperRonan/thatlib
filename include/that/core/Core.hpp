@@ -15,6 +15,9 @@
 #define DECLARE_STRINGIFIED(X) DECLARE_ENUM_VALUE_1(STRINGIFY(X))
 #define DECLARE_STRINGIFIED_2(X, V) DECLARE_ENUM_VALUE_1(STRINGIFY(X))
 
+#define CAT(X, Y) X##Y
+#define CAT2(X, Y) CAT(X, Y)
+
 namespace that
 {
 	template <bool value>
